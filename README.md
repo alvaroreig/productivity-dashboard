@@ -4,7 +4,7 @@ Just a simple PHP/Laravel app that retrieves (so far) tasks from Todoist and dis
 
 All the settings are configured in the .env file (check .env-sample).
 
-![](https://github.com/alvaroreig/productivity-dashboard/blob/5b112afd9ac48c57ec653d8b5116d179b812e8d6/resources/img/index.png)
+![](resources/img/index.png)
 
 ## Features
 
