@@ -4,6 +4,8 @@ Just a simple PHP/Laravel app that retrieves (so far) tasks from Todoist and dis
 
 All the settings are configured in the .env file (check .env-sample).
 
+![](resources/img/kindle.jpg)
+
 ![](resources/img/index.png)
 
 ## Features
