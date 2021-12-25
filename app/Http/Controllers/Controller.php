@@ -37,15 +37,15 @@ class Controller extends BaseController
             if ($tasks == FALSE){
                 Log::debug("False Todoist API Call");
             }
-        } catch (GuzzleHttp\Exception\ConnectException $e) {
-            report($e);
+        } catch (\Exception $e) {
             Log::info("Problem with Todoist API in first try");
+            report($e);
             try {
                 $tasks = $Todoist->getAllTasks($options);
                 Log::info("Success in the second try");
-            }catch (Throwable $etwo) {
-                report($e);
+            }catch (\Exception $etwo) {
                 Log::info("Problem with Todoist API in second try");
+                report($e);
                 $tasks = array();
                 // Force refresh in 15 seconds to restart the whole request
                 $refreshRate = 15;
