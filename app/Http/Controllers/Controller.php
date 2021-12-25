@@ -31,7 +31,13 @@ class Controller extends BaseController
         // Todoist API sometimes timeouts
         try {
             $tasks = $Todoist->getAllTasks($options);
-        } catch (Throwable $e) {
+            Logger::debug("Type of return");
+            Logger::debug(gettype($tasks));
+
+            if ($task == FALSE){
+                Log::debug("False Todoist API Call");
+            }
+        } catch (GuzzleHttp\Exception\ConnectException $e) {
             report($e);
             Log::info("Problem with Todoist API in first try");
             try {
