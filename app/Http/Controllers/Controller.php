@@ -20,14 +20,32 @@ class Controller extends BaseController
     public function index()
     {
 
+        $refreshRate = env('REFRESH_RATE_IN_SECONDS',600);
+
         // Get tasks from the API
         $Todoist = new TodoistClient(env('TODOIST_API_KEY'));
         $options = array(
             'filter' => env('TODOIST_FILTER','7 days | overdue') 
         );
         
-        $tasks = $Todoist->getAllTasks($options);
-
+        // Todoist API sometimes timeouts
+        try {
+            $tasks = $Todoist->getAllTasks($options);
+        } catch (Throwable $e) {
+            report($e);
+            Log::info("Problem with Todoist API in first try");
+            try {
+                $tasks = $Todoist->getAllTasks($options);
+                Log::info("Success in the second try");
+            }catch (Throwable $etwo) {
+                report($e);
+                Log::info("Problem with Todoist API in second try");
+                $tasks = array();
+                // Force refresh in 15 seconds to restart the whole request
+                $refreshRate = 15;
+                }            
+        }
+        
         // Store todays date in Readable form: Sunday 12 december 2021
         $date = Date::now()->format(env('APP_DATE_HEADER_MASK','l j F Y'));       
 
@@ -134,8 +152,6 @@ class Controller extends BaseController
         log::debug($todayTasks);
         log::debug($tomorrowTasks);
         log::debug($regularTasks);
-
-        $refreshRate = env('REFRESH_RATE_IN_SECONDS',600);
 
         return view('index',['date' => $date,'overdueTasks' => $overdueTasks, 'todayTasks' => $todayTasks, 'tomorrowTasks' => $tomorrowTasks,'regularTasks' => $regularTasks, 'refreshRate' => $refreshRate]);
     }
