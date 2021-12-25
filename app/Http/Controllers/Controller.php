@@ -34,7 +34,7 @@ class Controller extends BaseController
             Log::debug("Type of return");
             Log::debug(gettype($tasks));
 
-            if ($task == FALSE){
+            if ($tasks == FALSE){
                 Log::debug("False Todoist API Call");
             }
         } catch (GuzzleHttp\Exception\ConnectException $e) {
