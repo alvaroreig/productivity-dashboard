@@ -51,7 +51,7 @@ class Controller extends BaseController
         $date = Date::now()->format(env('APP_DATE_HEADER_MASK','l j F Y'));       
 
         $filteredtasks = collect();
-        foreach ($tasks as $task){
+        foreach ($tasks as $task){           
 
             // Filter tasks removing links (it makes the task too long for the kindle screen)
             $content = preg_replace('/\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|$!:,.;]*[A-Z0-9+&@#\/%=~_|$]/i', '', $task['content']);
@@ -59,6 +59,32 @@ class Controller extends BaseController
             if (strpos($content,']()') !== false ){
                 // The ']()' string was found, so it was a link with text. Remove clutter
                 $content = str_replace(']()',']',$content);
+            }
+
+            if (isset($task['due']['datetime'])){
+                
+                //Log::debug($task);
+
+                $dateTest = new Date($task['due']['datetime']);
+                $dateTest->setTimezone('Europe/Madrid');
+    
+                if ($dateTest->hour < 10){
+                    $hourString = '0' . strval($dateTest->hour);
+                }else{
+                    $hourString = strval($dateTest->hour);
+                }
+
+                if ($dateTest->minute < 10){
+                    $minuteString = '0' . strval($dateTest->minute);
+                }else{
+                    $minuteString = strval($dateTest->minute);
+                }
+
+                $content = '[' . $hourString . ':' . $minuteString . '] ' . $content;
+
+                //Log::debug($dateTest->hour);
+                //Log::debug($dateTest->minute);
+
             }
 
             // If task longer than TASK_MAX_LENGHT, truncate it so it fits in Kindle Touch width
