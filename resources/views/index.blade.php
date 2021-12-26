@@ -25,7 +25,11 @@
     </head>
     <body>
         <!-- Fecha actual -->
-        <h1 style="border: 1px solid black;width:95%"><div style='display: table;margin: 0 auto;'>{{ $date }}</div></h1>
+        <h1 style="border: 1px solid black;width:95%">
+            <div style='display: table;margin: 0 auto;'>
+                <a href="javascript:location.reload(true)">{{ $date }}</a>
+            </div>
+        </h1>
 
         @if($overdueTasks->get('tasks')->count() > 0 )
             <h2>{{ $overdueTasks->get('readableName') }}</h2>
