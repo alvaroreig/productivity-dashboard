@@ -20,7 +20,7 @@ class Controller extends BaseController
     public function index()
     {
 
-        $refreshRate = env('REFRESH_RATE_IN_SECONDS',600);
+        $refreshRate = env('REFRESH_RATE_IN_SECONDS',1800);
 
         // Get tasks from the API
         $Todoist = new TodoistClient(env('TODOIST_API_KEY'));
@@ -31,20 +31,15 @@ class Controller extends BaseController
         // Todoist API sometimes timeouts
         try {
             $tasks = $Todoist->getAllTasks($options);
-            Log::debug("Type of return");
-            Log::debug(gettype($tasks));
-
-            if ($tasks == FALSE){
-                Log::debug("False Todoist API Call");
-            }
+            Log::info("TODOIST API:Success in the first try");
         } catch (\Exception $e) {
-            Log::info("Problem with Todoist API in first try");
+            Log::error("TODOIST API:Problem in first try");
             report($e);
             try {
                 $tasks = $Todoist->getAllTasks($options);
-                Log::info("Success in the second try");
+                Log::info("TODOIST API:Success in the second try");
             }catch (\Exception $etwo) {
-                Log::info("Problem with Todoist API in second try");
+                Log::error("TODOIST API:Problem in second try");
                 report($e);
                 $tasks = array();
                 // Force refresh in 15 seconds to restart the whole request
@@ -102,7 +97,6 @@ class Controller extends BaseController
         $tomorrowTasks-> put('tasks',collect());
 
         // Will have a key for every date in the 'YYYY-MM-DD' format. 
-        //'martes, 14 de diciembre' format
         $regularTasks = collect();
 
         $today = new Date('today');
