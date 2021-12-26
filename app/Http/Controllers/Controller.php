@@ -61,29 +61,19 @@ class Controller extends BaseController
                 $content = str_replace(']()',']',$content);
             }
 
+            // If the task has hour and the setting is on, append [HH:MM] to the left of the title
             if (env('ADD_HOUR',True) & isset($task['due']['datetime'])){
-                
-                //Log::debug($task);
 
-                $dateTest = new Date($task['due']['datetime']);
-                $dateTest->setTimezone(env('APP_TIMEZONE','Europe/Madrid'));
-    
-                if ($dateTest->hour < 10){
-                    $hourString = '0' . strval($dateTest->hour);
-                }else{
-                    $hourString = strval($dateTest->hour);
-                }
+                // Get datetime in a date object and apply the timezone
+                $dateWithHour = new Date($task['due']['datetime']);
+                $dateWithHour->setTimezone(env('APP_TIMEZONE','Europe/Madrid'));
 
-                if ($dateTest->minute < 10){
-                    $minuteString = '0' . strval($dateTest->minute);
-                }else{
-                    $minuteString = strval($dateTest->minute);
-                }
+                // Add a '0' to avoid times like 9:15 (instead of 09:15) or 12:4 (instead of 12:04)
+                $hourString = ($dateWithHour->hour < 10) ? '0' . strval($dateWithHour->hour) : strval($dateWithHour->hour);
+                $minuteString = ($dateWithHour->minute < 10) ? '0' . strval($dateWithHour->minute) : strval($dateWithHour->minute);
 
+                // Modify the task title
                 $content = '[' . $hourString . ':' . $minuteString . '] ' . $content;
-
-                //Log::debug($dateTest->hour);
-                //Log::debug($dateTest->minute);
 
             }
 
