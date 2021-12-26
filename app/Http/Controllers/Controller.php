@@ -61,12 +61,12 @@ class Controller extends BaseController
                 $content = str_replace(']()',']',$content);
             }
 
-            if (isset($task['due']['datetime'])){
+            if (env('ADD_HOUR',True) & isset($task['due']['datetime'])){
                 
                 //Log::debug($task);
 
                 $dateTest = new Date($task['due']['datetime']);
-                $dateTest->setTimezone('Europe/Madrid');
+                $dateTest->setTimezone(env('APP_TIMEZONE','Europe/Madrid'));
     
                 if ($dateTest->hour < 10){
                     $hourString = '0' . strval($dateTest->hour);
