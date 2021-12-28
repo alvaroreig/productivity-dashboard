@@ -31,37 +31,37 @@
             </div>
         </h1>
 
-        @if($overdueTasks->get('tasks')->count() > 0 )
-            <h2>{{ $overdueTasks->get('readableName') }}</h2>
+        @if($overdueElements->get('elements')->count() > 0 )
+            <h2>{{ $overdueElements->get('readableName') }}</h2>
 
-            @foreach($overdueTasks->get('tasks') as $task)
-            <h3><input type="radio">{{ $task }}</h3>
+            @foreach($overdueElements->get('elements') as $element)
+            <h3><input type="radio">{{ $element }}</h3>
             @endforeach 
         @endif
 
-        @if($todayTasks->get('tasks')->count() > 0 )
-            <h2>{{ $todayTasks->get('readableName') }}</h2>
+        @if($todayElements->get('elements')->count() > 0 )
+            <h2>{{ $todayElements->get('readableName') }}</h2>
 
-            @foreach($todayTasks->get('tasks') as $task)
-            <h3><input type="radio">{{ $task }}</h3>
+            @foreach($todayElements->get('elements') as $element)
+            <h3><input type="radio">{{ $element }}</h3>
             @endforeach 
         @endif
 
-        @if($tomorrowTasks->get('tasks')->count() > 0 )
-            <h2>{{ $tomorrowTasks->get('readableName') }}</h2>
+        @if($tomorrowElements->get('elements')->count() > 0 )
+            <h2>{{ $tomorrowElements->get('readableName') }}</h2>
 
-            @foreach($tomorrowTasks->get('tasks') as $task)
-            <h3><input type="radio">{{ $task }}</h3>
+            @foreach($tomorrowElements->get('elements') as $element)
+            <h3><input type="radio">{{ $element }}</h3>
             @endforeach 
         @endif
 
-        @if($regularTasks->keys()->count() > 0 )
+        @if($regularElements->keys()->count() > 0 )
             
-            @foreach($regularTasks->keys() as $date)
-                <h2>{{ $regularTasks->get($date)->get('readableDate') }}</h2>
+            @foreach($regularElements->keys() as $date)
+                <h2>{{ $regularElements->get($date)->get('readableDate') }}</h2>
 
-                @foreach($regularTasks->get($date)->get('tasks') as $task)
-                    <h3><input type="radio">{{ $task }}</h3>
+                @foreach($regularElements->get($date)->get('elements') as $element)
+                    <h3><input type="radio">{{ $element }}</h3>
                 @endforeach
 
             @endforeach

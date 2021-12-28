@@ -137,32 +137,32 @@ class Controller extends BaseController
 
 
         /* We're gonne pass four date-related collections to the view
-        - overdueTasks
-        - todayTasks
-        - tomorrowTasks
-        - regularTasks: (from the day after tomorrow to the end, in chronological order)
+        - overdueElements
+        - todayElements
+        - tomorrowElements
+        - regularElements: (from the day after tomorrow to the end, in chronological order)
         
         We do it like that because we need to group overdue tasks in one element and building the
         HTML blocks is easier this wat
         */
 
-        $overdueTasks = collect();
-        // Will have two keys: readableName and tasks
-        $overdueTasks-> put('readableName',env('APP_LOCALE_OVERDUE','Overdue'));
-        $overdueTasks-> put('tasks',collect());
+        $overdueElements = collect();
+        // Will have two keys: readableName and elements
+        $overdueElements-> put('readableName',env('APP_LOCALE_OVERDUE','Overdue'));
+        $overdueElements-> put('elements',collect());
 
-        // Will have two keys: readableName and tasks
-        $todayTasks = collect();
-        $todayTasks-> put('readableName',env('APP_LOCALE_TODAY','Today'));
-        $todayTasks-> put('tasks',collect());
+        // Will have two keys: readableName and elements
+        $todayElements = collect();
+        $todayElements-> put('readableName',env('APP_LOCALE_TODAY','Today'));
+        $todayElements-> put('elements',collect());
 
-        // Will have two keys: readableName and tasks
-        $tomorrowTasks = collect();
-        $tomorrowTasks-> put('readableName',env('APP_LOCALE_TOMORROW','Tomorrow'));
-        $tomorrowTasks-> put('tasks',collect());
+        // Will have two keys: readableName and elements
+        $tomorrowElements = collect();
+        $tomorrowElements-> put('readableName',env('APP_LOCALE_TOMORROW','Tomorrow'));
+        $tomorrowElements-> put('elements',collect());
 
         // Will have a key for every date in the 'YYYY-MM-DD' format. 
-        $regularTasks = collect();
+        $regularElements = collect();
 
         foreach($filteredElements as $task){
 
@@ -174,51 +174,51 @@ class Controller extends BaseController
             if ($today->diffInHours($taskDate,false) < 0){
                 
                 // Overdue Task
-                $tasks = $overdueTasks->get('tasks');
-                $tasks->push($title);
-                $overdueTasks->put('tasks',$tasks);
+                $taselementsks = $overdueElements->get('elements');
+                $elements->push($title);
+                $overdueElements->put('elements',$elements);
 
             }else if ($taskDate->equalTo($today)){
            
                 // Today Task
-                $tasks = $todayTasks->get('tasks');
-                $tasks->push($title);
-                $todayTasks->put('tasks',$tasks);
+                $elements = $todayElements->get('elements');
+                $elements->push($title);
+                $todayElements->put('elements',$elements);
 
             }else if ($taskDate->diffInDays($today) == 1){
                
                 // Tomorrow Task
-                $tasks = $tomorrowTasks->get('tasks');
-                $tasks->push($title);
-                $tomorrowTasks->put('tasks',$tasks);
+                $elements = $tomorrowElements->get('elements');
+                $elements->push($title);
+                $tomorrowElements->put('elements',$elements);
             }else{
                 
                 // Regular task (> tomorrow)
                 $readableDate = $taskDate->format(env('APP_LOCALE_OTHERS_MASK','l,j \de F'));
-                $fields = $regularTasks->get($task->get('date'));
+                $fields = $regularElements->get($task->get('date'));
 
                 if (is_null($fields)){
 
                     //First task with this date, init the collection
                     $fields = collect();
                     $fields->put("readableDate",$readableDate);
-                    $fields->put("tasks",collect());  
+                    $fields->put("elements",collect());  
                 }
 
-                $tasks = $fields->get('tasks');
-                $tasks->push($title);
-                $fields->put("tasks",$tasks);
-                $regularTasks->put($task->get('date'),$fields);
+                $elements = $fields->get('elements');
+                $elements->push($title);
+                $fields->put("elements",$elements);
+                $regularElements->put($elements->get('date'),$fields);
             }
         }
 
-        $regularTasks = $regularTasks->sortKeys();
+        $regularElements = $regularElements->sortKeys();
 
-        // log::debug($overdueTasks);
-        // log::debug($todayTasks);
-        // log::debug($tomorrowTasks);
-        // log::debug($regularTasks);
+        // log::debug($overdueElements);
+        // log::debug($todayElements);
+        // log::debug($tomorrowElements);
+        // log::debug($regularElements);
 
-        return view('index',['date' => $date,'overdueTasks' => $overdueTasks, 'todayTasks' => $todayTasks, 'tomorrowTasks' => $tomorrowTasks,'regularTasks' => $regularTasks, 'refreshRate' => $refreshRate]);
+        return view('index',['date' => $date,'overdueElements' => $overdueElements, 'todayElements' => $todayElements, 'tomorrowElements' => $tomorrowElements,'regularElements' => $regularElements, 'refreshRate' => $refreshRate]);
     }
 }
