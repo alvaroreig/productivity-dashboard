@@ -13,12 +13,24 @@ use Illuminate\Support\Str;
 
 use Jenssegers\Date\Date;
 
+use Spatie\GoogleCalendar\Event;
+
 class Controller extends BaseController
 {
     use AuthorizesRequests, DispatchesJobs, ValidatesRequests;
 
     public function index()
     {
+
+        $today = new Date('now');
+        $limitDate = new Date('now');
+        $limitDate->addDays(7);
+        Log::debug($today);
+        Log::debug($limitDate);
+
+        // get all future events on a calendar
+        $events = Event::get($today,$limitDate);
+        Log::debug($events);
 
         $refreshRate = env('REFRESH_RATE_IN_SECONDS',1800);
 
@@ -129,8 +141,6 @@ class Controller extends BaseController
         // Will have a key for every date in the 'YYYY-MM-DD' format. 
         $regularTasks = collect();
 
-        $today = new Date('today');
-
         foreach($filteredtasks as $task){
 
             // If the task has hour, append it to the title
@@ -181,10 +191,10 @@ class Controller extends BaseController
 
         $regularTasks = $regularTasks->sortKeys();
 
-        log::debug($overdueTasks);
-        log::debug($todayTasks);
-        log::debug($tomorrowTasks);
-        log::debug($regularTasks);
+        // log::debug($overdueTasks);
+        // log::debug($todayTasks);
+        // log::debug($tomorrowTasks);
+        // log::debug($regularTasks);
 
         return view('index',['date' => $date,'overdueTasks' => $overdueTasks, 'todayTasks' => $todayTasks, 'tomorrowTasks' => $tomorrowTasks,'regularTasks' => $regularTasks, 'refreshRate' => $refreshRate]);
     }
