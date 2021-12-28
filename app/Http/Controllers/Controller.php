@@ -33,18 +33,18 @@ class Controller extends BaseController
         
         // Todoist API sometimes timeouts
         try {
-            $tasks = $Todoist->getAllTasks($options);
+            $elements = $Todoist->getAllTasks($options);
             Log::info("TODOIST API:Success in the first try");
         } catch (\Exception $e) {
             Log::error("TODOIST API:Problem in first try");
             report($e);
             try {
-                $tasks = $Todoist->getAllTasks($options);
+                $elements = $Todoist->getAllTasks($options);
                 Log::info("TODOIST API:Success in the second try");
             }catch (\Exception $etwo) {
                 Log::error("TODOIST API:Problem in second try");
                 report($e);
-                $tasks = array();
+                $elements = array();
                 // Force refresh in 15 seconds to restart the whole request
                 $refreshRate = 15;
                 }            
@@ -59,37 +59,37 @@ class Controller extends BaseController
         //********************************************************************************************************************************/
         //***************************************TODOIST TASKS PROCESSING*****************************************************************/
         //********************************************************************************************************************************/
-        foreach ($tasks as $task){           
+        foreach ($elements as $element){           
 
             // Filter tasks removing links (it makes the task too long for the kindle screen)
-            $content = preg_replace('/\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|$!:,.;]*[A-Z0-9+&@#\/%=~_|$]/i', '', $task['content']);
+            $content = preg_replace('/\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|$!:,.;]*[A-Z0-9+&@#\/%=~_|$]/i', '', $element['content']);
 
             if (strpos($content,']()') !== false ){
                 // The ']()' string was found, so it was a link with text. Remove clutter
                 $content = str_replace(']()',']',$content);
             }
 
-            $taskAsCollection = collect();
+            $elementAsCollection = collect();
 
             // If the task has hour and the setting is on, append [HH:MM] to the left of the title
-            if (env('ADD_HOUR',True) & isset($task['due']['datetime'])){
+            if (env('ADD_HOUR',True) & isset($element['due']['datetime'])){
 
                 // Get datetime in a date object and apply the timezone
-                $dateWithHour = new Date($task['due']['datetime']);
+                $dateWithHour = new Date($element['due']['datetime']);
                 $dateWithHour->setTimezone(env('APP_TIMEZONE','Europe/Madrid'));
 
                 // // Add a '0' to avoid times like 9:15 (instead of 09:15) or 12:4 (instead of 12:04)
                 $hourString = ($dateWithHour->hour < 10) ? '0' . strval($dateWithHour->hour) : strval($dateWithHour->hour);
                 $minuteString = ($dateWithHour->minute < 10) ? '0' . strval($dateWithHour->minute) : strval($dateWithHour->minute);
 
-                $taskAsCollection->put('hour',$hourString . ':' . $minuteString);
+                $elementAsCollection->put('hour',$hourString . ':' . $minuteString);
                 // // Modify the task title
                 // $content = '[' . $hourString . ':' . $minuteString . '] ' . $content;
 
             }else{
                 /*Use '00:00' as hour in tasks without hour, as we want this tasks to appear before the ordered
                 tasks with hour*/ 
-                $taskAsCollection->put('hour','00:00'); 
+                $elementAsCollection->put('hour','00:00'); 
             }
 
             // If task longer than TASK_MAX_LENGHT, truncate it so it fits in Kindle Touch width
@@ -97,10 +97,10 @@ class Controller extends BaseController
 
             // Add the processed task to $filteredElements
             
-            $taskAsCollection->put('date',$task['due']['date']);
-            $taskAsCollection->put('title',$content);
-            $taskAsCollection->put('type','task');
-            $filteredElements->push($taskAsCollection);
+            $elementAsCollection->put('date',$element['due']['date']);
+            $elementAsCollection->put('title',$content);
+            $elementAsCollection->put('type','task');
+            $filteredElements->push($elementAsCollection);
         }
 
 
@@ -110,20 +110,33 @@ class Controller extends BaseController
         $limitDate = new Date('today');
         $limitDate->addDays(7);
 
-        // get all future events on a calendar
-        $events = Event::get($today,$limitDate);
-  
-        foreach ($events as $event){
-            $eventAsCollection = collect();
+        // Get all Google Calendars IDs
+        $calendars = explode(',',env('GCAL_CALENDARS_IDS'));
 
-            $eventAsCollection->put('title',$event->name);
-            $eventAsCollection->put('date',$event->startDateTime->format('Y-m-d'));
-            $eventAsCollection->put('hour',$event->startDateTime->format('H:i'));
-            $taskAsCollection->put('type','event');
+        Log::debug($calendars);
 
-            $filteredElements->push($eventAsCollection);
+        foreach($calendars as $calendar){
+
+            // get all future events on a calendar
+            $events = Event::get($today,$limitDate,[],$calendar);
+    
+            foreach ($events as $event){
+                $eventAsCollection = collect();
+
+                $eventAsCollection->put('title',$event->name);
+                $eventAsCollection->put('date',$event->startDateTime->format('Y-m-d'));
+                $eventAsCollection->put('hour',$event->startDateTime->format('H:i'));
+                $elementAsCollection->put('type','event');
+
+                Log::debug($eventAsCollection);
+
+                $filteredElements->push($eventAsCollection);
+
+            }
 
         }
+
+        
 
         //********************************************************************************************************************************/
         //***************************************PROCESSING ELEMENTS INTO 4 FINAL COLLECTIONS*********************************************/
@@ -164,28 +177,28 @@ class Controller extends BaseController
         // Will have a key for every date in the 'YYYY-MM-DD' format. 
         $regularElements = collect();
 
-        foreach($filteredElements as $task){
+        foreach($filteredElements as $element){
 
             // If the task has hour, append it to the title
-            $title = ($task->get('hour') === '00:00') ? $task->get('title') : '[' . $task->get('hour') . '] ' . $task->get('title');
+            $title = ($element->get('hour') === '00:00') ? $element->get('title') : '[' . $element->get('hour') . '] ' . $element->get('title');
 
-            $taskDate = new Date($task->get('date'));
+            $elementDate = new Date($element->get('date'));
 
-            if ($today->diffInHours($taskDate,false) < 0){
+            if ($today->diffInHours($elementDate,false) < 0){
                 
                 // Overdue Task
                 $taselementsks = $overdueElements->get('elements');
                 $elements->push($title);
                 $overdueElements->put('elements',$elements);
 
-            }else if ($taskDate->equalTo($today)){
+            }else if ($elementDate->equalTo($today)){
            
                 // Today Task
                 $elements = $todayElements->get('elements');
                 $elements->push($title);
                 $todayElements->put('elements',$elements);
 
-            }else if ($taskDate->diffInDays($today) == 1){
+            }else if ($elementDate->diffInDays($today) == 1){
                
                 // Tomorrow Task
                 $elements = $tomorrowElements->get('elements');
@@ -194,21 +207,38 @@ class Controller extends BaseController
             }else{
                 
                 // Regular task (> tomorrow)
-                $readableDate = $taskDate->format(env('APP_LOCALE_OTHERS_MASK','l,j \de F'));
-                $fields = $regularElements->get($task->get('date'));
+                Log::debug("regular element");
+                Log::debug($element->get('date'));
+                $readableDate = $elementDate->format(env('APP_LOCALE_OTHERS_MASK','l,j \de F'));
+                
+                if (!$regularElements->has($element->get('date'))){
 
-                if (is_null($fields)){
-
+                    //Log::debug("it was new");
                     //First task with this date, init the collection
                     $fields = collect();
                     $fields->put("readableDate",$readableDate);
-                    $fields->put("elements",collect());  
-                }
+                    $fields->put("elements",collect($title));  
+                    $regularElements->put($element->get('date'),$fields);
 
-                $elements = $fields->get('elements');
-                $elements->push($title);
-                $fields->put("elements",$elements);
-                $regularElements->put($elements->get('date'),$fields);
+                    // Log::debug("regularElements after");
+                    // Log::debug($regularElements);
+                }else{
+                    // Log::debug("it was old");
+                    // Log::debug("regularElements before");
+                    // Log::debug($regularElements);
+
+                    $fields = $regularElements->get($element->get('date'));
+                    $elements = $fields->get('elements');
+                    $elements->push($title);                 
+                    $fields->put("elements",$elements);
+                    
+                    
+                    $regularElements->merge($elements->get('date'),$fields);
+
+                    // Log::debug("regularElements after");
+                    // Log::debug($regularElements);
+                    
+                }                
             }
         }
 
@@ -217,7 +247,7 @@ class Controller extends BaseController
         // log::debug($overdueElements);
         // log::debug($todayElements);
         // log::debug($tomorrowElements);
-        // log::debug($regularElements);
+        //log::debug($regularElements);
 
         return view('index',['date' => $date,'overdueElements' => $overdueElements, 'todayElements' => $todayElements, 'tomorrowElements' => $tomorrowElements,'regularElements' => $regularElements, 'refreshRate' => $refreshRate]);
     }
