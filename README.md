@@ -27,9 +27,9 @@ You can customize (localize) the keyword applied to every category of element(AP
 
 ### Other
 
-The view will autorefresh every 600 seconds. You can change that setting in REFRESH_RATE_IN_SECONDS
-
-Every element will be truncated if the string is longer than TASK_MAX_LENGHT
+* The view will autorefresh every 1800 seconds. You can change that setting in REFRESH_RATE_IN_SECONDS.
+* Every element will be truncated if the string is longer than TASK_MAX_LENGHT.
+* Clicking on the header will refresh the view.
 
 ## Tested Devices
 
