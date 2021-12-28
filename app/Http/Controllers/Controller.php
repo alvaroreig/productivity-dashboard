@@ -118,7 +118,14 @@ class Controller extends BaseController
         foreach($calendars as $calendar){
 
             // get all future events on a calendar
-            $events = Event::get($today,$limitDate,[],$calendar);
+            try {
+                $events = Event::get($today,$limitDate,[],$calendar);
+                Log::info("GCAL API:Success in the first try");
+            }catch (\Exception $e) {
+                $events = Event::get($today,$limitDate,[],$calendar);
+                Log::info("GCAL API:Success in the second try");
+            }
+            
     
             foreach ($events as $event){
                 $eventAsCollection = collect();
