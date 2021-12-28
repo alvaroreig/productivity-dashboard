@@ -25,6 +25,8 @@ The elements are grouped in for type of elements:
 
 You can customize (localize) the keyword applied to every category of element(APP_LOCALE_OVERDUE,APP_LOCALE_TODAY,APP_LOCALE_TODAYAPP_LOCALE_TOMORROW,APP_LOCALE_OTHERS_MASK)
 
+You can also set a flag (ADD_HOUR) to append the hour in [HH:MM] before the title in tasks with hour.
+
 ### Other
 
 * The view will autorefresh every 1800 seconds. You can change that setting in REFRESH_RATE_IN_SECONDS.
