@@ -53,7 +53,12 @@ class Controller extends BaseController
         // Store todays date in Readable form: Sunday 12 december 2021
         $date = Date::now()->format(env('APP_DATE_HEADER_MASK','l j F Y'));       
 
-        $filteredtasks = collect();
+        // This collection will contain tasks (Todoist) and events (Google Calendar)
+        $filteredElements = collect();
+
+        //********************************************************************************************************************************/
+        //***************************************TODOIST TASKS PROCESSING*****************************************************************/
+        //********************************************************************************************************************************/
         foreach ($tasks as $task){           
 
             // Filter tasks removing links (it makes the task too long for the kindle screen)
@@ -90,41 +95,45 @@ class Controller extends BaseController
             // If task longer than TASK_MAX_LENGHT, truncate it so it fits in Kindle Touch width
             $content = Str::of($content)->limit(env('TASK_MAX_LENGHT',66));
 
-            // Add the processed task to $filteredtasks
+            // Add the processed task to $filteredElements
             
             $taskAsCollection->put('date',$task['due']['date']);
             $taskAsCollection->put('title',$content);
-            $filteredtasks->push($taskAsCollection);
+            $taskAsCollection->put('type','task');
+            $filteredElements->push($taskAsCollection);
         }
 
+
+        //********************************************************************************************************************************/
+        //***************************************GOOGLE CALENDAR EVENTS PROCESSING********************************************************/
+        //********************************************************************************************************************************/
         $limitDate = new Date('today');
         $limitDate->addDays(7);
-        //Log::debug($today);
-        //Log::debug($limitDate);
 
         // get all future events on a calendar
         $events = Event::get($today,$limitDate);
-        //Log::debug($events);
-
+  
         foreach ($events as $event){
             $eventAsCollection = collect();
 
             $eventAsCollection->put('title',$event->name);
             $eventAsCollection->put('date',$event->startDateTime->format('Y-m-d'));
             $eventAsCollection->put('hour',$event->startDateTime->format('H:i'));
+            $taskAsCollection->put('type','event');
 
-            $filteredtasks->push($eventAsCollection);
+            $filteredElements->push($eventAsCollection);
 
-            // Log::debug($event->name);
-            // Log::debug($event->startDateTime->format('Y-m-d'));
-            // Log::debug($event->startDateTime->format('H:i'));
         }
 
+        //********************************************************************************************************************************/
+        //***************************************PROCESSING ELEMENTS INTO 4 FINAL COLLECTIONS*********************************************/
+        //********************************************************************************************************************************/
+
         // Order the tasks by hour
-        $filteredtasks = $filteredtasks->sortBy([
+        $filteredElements = $filteredElements->sortBy([
             ['hour', 'asc'],
         ]);
-        $filteredtasks = $filteredtasks->values()->all();
+        $filteredElements = $filteredElements->values()->all();
 
 
         /* We're gonne pass four date-related collections to the view
@@ -155,7 +164,7 @@ class Controller extends BaseController
         // Will have a key for every date in the 'YYYY-MM-DD' format. 
         $regularTasks = collect();
 
-        foreach($filteredtasks as $task){
+        foreach($filteredElements as $task){
 
             // If the task has hour, append it to the title
             $title = ($task->get('hour') === '00:00') ? $task->get('title') : '[' . $task->get('hour') . '] ' . $task->get('title');
