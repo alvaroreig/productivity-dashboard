@@ -61,6 +61,8 @@ class Controller extends BaseController
                 $content = str_replace(']()',']',$content);
             }
 
+            $taskAsCollection = collect();
+
             // If the task has hour and the setting is on, append [HH:MM] to the left of the title
             if (env('ADD_HOUR',True) & isset($task['due']['datetime'])){
 
@@ -68,24 +70,36 @@ class Controller extends BaseController
                 $dateWithHour = new Date($task['due']['datetime']);
                 $dateWithHour->setTimezone(env('APP_TIMEZONE','Europe/Madrid'));
 
-                // Add a '0' to avoid times like 9:15 (instead of 09:15) or 12:4 (instead of 12:04)
+                // // Add a '0' to avoid times like 9:15 (instead of 09:15) or 12:4 (instead of 12:04)
                 $hourString = ($dateWithHour->hour < 10) ? '0' . strval($dateWithHour->hour) : strval($dateWithHour->hour);
                 $minuteString = ($dateWithHour->minute < 10) ? '0' . strval($dateWithHour->minute) : strval($dateWithHour->minute);
 
-                // Modify the task title
-                $content = '[' . $hourString . ':' . $minuteString . '] ' . $content;
+                $taskAsCollection->put('hour',$hourString . ':' . $minuteString);
+                // // Modify the task title
+                // $content = '[' . $hourString . ':' . $minuteString . '] ' . $content;
 
+            }else{
+                /*Use '00:00' as hour in tasks without hour, as we want this tasks to appear before the ordered
+                tasks with hour*/ 
+                $taskAsCollection->put('hour','00:00'); 
             }
 
             // If task longer than TASK_MAX_LENGHT, truncate it so it fits in Kindle Touch width
             $content = Str::of($content)->limit(env('TASK_MAX_LENGHT',66));
 
             // Add the processed task to $filteredtasks
-            $taskAsCollection = collect();
+            
             $taskAsCollection->put('date',$task['due']['date']);
             $taskAsCollection->put('title',$content);
             $filteredtasks->push($taskAsCollection);
         }
+
+        // Order the tasks by hour
+        $filteredtasks = $filteredtasks->sortBy([
+            ['hour', 'asc'],
+        ]);
+        $filteredtasks = $filteredtasks->values()->all();
+
 
         /* We're gonne pass four date-related collections to the view
         - overdueTasks
@@ -119,44 +133,47 @@ class Controller extends BaseController
 
         foreach($filteredtasks as $task){
 
+            // If the task has hour, append it to the title
+            $title = ($task->get('hour') === '00:00') ? $task->get('title') : '[' . $task->get('hour') . '] ' . $task->get('title');
+
             $taskDate = new Date($task->get('date'));
 
             if ($today->diffInHours($taskDate,false) < 0){
+                
                 // Overdue Task
-
                 $tasks = $overdueTasks->get('tasks');
-                $tasks->push($task->get('title'));
+                $tasks->push($title);
                 $overdueTasks->put('tasks',$tasks);
 
             }else if ($taskDate->equalTo($today)){
+           
                 // Today Task
-
                 $tasks = $todayTasks->get('tasks');
-                $tasks->push($task->get('title'));
+                $tasks->push($title);
                 $todayTasks->put('tasks',$tasks);
 
             }else if ($taskDate->diffInDays($today) == 1){
+               
                 // Tomorrow Task
-
                 $tasks = $tomorrowTasks->get('tasks');
-                $tasks->push($task->get('title'));
+                $tasks->push($title);
                 $tomorrowTasks->put('tasks',$tasks);
-
-
             }else{
+                
                 // Regular task (> tomorrow)
-                // Readable format 'martes, 14 de diciembre'
                 $readableDate = $taskDate->format(env('APP_LOCALE_OTHERS_MASK','l,j \de F'));
-
                 $fields = $regularTasks->get($task->get('date'));
 
                 if (is_null($fields)){
+
+                    //First task with this date, init the collection
                     $fields = collect();
                     $fields->put("readableDate",$readableDate);
                     $fields->put("tasks",collect());  
                 }
+
                 $tasks = $fields->get('tasks');
-                $tasks->push($task->get('title'));
+                $tasks->push($title);
                 $fields->put("tasks",$tasks);
                 $regularTasks->put($task->get('date'),$fields);
             }
