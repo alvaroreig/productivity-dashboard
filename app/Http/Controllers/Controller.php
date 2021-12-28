@@ -22,16 +22,7 @@ class Controller extends BaseController
     public function index()
     {
 
-        $today = new Date('now');
-        $limitDate = new Date('now');
-        $limitDate->addDays(7);
-        Log::debug($today);
-        Log::debug($limitDate);
-
-        // get all future events on a calendar
-        $events = Event::get($today,$limitDate);
-        Log::debug($events);
-
+        $today = new Date('today');
         $refreshRate = env('REFRESH_RATE_IN_SECONDS',1800);
 
         // Get tasks from the API
@@ -104,6 +95,29 @@ class Controller extends BaseController
             $taskAsCollection->put('date',$task['due']['date']);
             $taskAsCollection->put('title',$content);
             $filteredtasks->push($taskAsCollection);
+        }
+
+        $limitDate = new Date('today');
+        $limitDate->addDays(7);
+        //Log::debug($today);
+        //Log::debug($limitDate);
+
+        // get all future events on a calendar
+        $events = Event::get($today,$limitDate);
+        //Log::debug($events);
+
+        foreach ($events as $event){
+            $eventAsCollection = collect();
+
+            $eventAsCollection->put('title',$event->name);
+            $eventAsCollection->put('date',$event->startDateTime->format('Y-m-d'));
+            $eventAsCollection->put('hour',$event->startDateTime->format('H:i'));
+
+            $filteredtasks->push($eventAsCollection);
+
+            // Log::debug($event->name);
+            // Log::debug($event->startDateTime->format('Y-m-d'));
+            // Log::debug($event->startDateTime->format('H:i'));
         }
 
         // Order the tasks by hour
