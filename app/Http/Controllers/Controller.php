@@ -101,6 +101,7 @@ class Controller extends BaseController
             $elementAsCollection->put('title',$content);
             $elementAsCollection->put('type','task');
             $filteredElements->push($elementAsCollection);
+            //Log::debug($filteredElements);
         }
 
 
@@ -194,7 +195,7 @@ class Controller extends BaseController
             if ($today->diffInHours($elementDate,false) < 0){
                 
                 // Overdue Task
-                $taselementsks = $overdueElements->get('elements');
+                $elements = $overdueElements->get('elements');
                 $elements->push($title);
                 $overdueElements->put('elements',$elements);
 
@@ -251,7 +252,7 @@ class Controller extends BaseController
 
         $regularElements = $regularElements->sortKeys();
 
-        // log::debug($overdueElements);
+        log::debug($overdueElements);
         // log::debug($todayElements);
         // log::debug($tomorrowElements);
         //log::debug($regularElements);
