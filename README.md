@@ -23,12 +23,17 @@ The elements are grouped in for type of elements:
 - Elements due tomorrow
 - The rest
 
-You can customize (localize) the keyword applied to every category of element(APP_LOCALE_OVERDUE,APP_LOCALE_TODAY,APP_LOCALE_TODAYAPP_LOCALE_TOMORROW,APP_LOCALE_OTHERS_MASK)
+You can customize (localize) the keyword applied to every category of element:
+
+* APP_LOCALE_OVERDUE
+* APP_LOCALE_TODAY
+* APP_LOCALE_TOMORROW
+* APP_LOCALE_OTHERS_MASK
 
 ### Other
 
 * The view will autorefresh every 1800 seconds. You can change that setting in REFRESH_RATE_IN_SECONDS.
-* Every element will be truncated if the string is longer than TASK_MAX_LENGHT.
+* Every element will be truncated if the string is longer than ELEMENT_MAX_LENGHT.
 * Clicking on the header will refresh the view.
 
 ## Tested Devices

@@ -92,8 +92,8 @@ class Controller extends BaseController
                 $elementAsCollection->put('hour','00:00'); 
             }
 
-            // If task longer than TASK_MAX_LENGHT, truncate it so it fits in Kindle Touch width
-            $content = Str::of($content)->limit(env('TASK_MAX_LENGHT',66));
+            // If task longer than ELEMENT_MAX_LENGHT, truncate it so it fits in Kindle Touch width
+            $content = Str::of($content)->limit(env('ELEMENT_MAX_LENGHT',66));
 
             // Add the processed task to $filteredElements
             
@@ -101,7 +101,6 @@ class Controller extends BaseController
             $elementAsCollection->put('title',$content);
             $elementAsCollection->put('type','task');
             $filteredElements->push($elementAsCollection);
-            //Log::debug($filteredElements);
         }
 
 
@@ -131,20 +130,18 @@ class Controller extends BaseController
             foreach ($events as $event){
                 $eventAsCollection = collect();
 
-                $eventAsCollection->put('title',$event->name);
+                $title = $event->name;
+                // If event title longer than ELEMENT_MAX_LENGHT, truncate it so it fits in Kindle Touch width
+                $title = Str::of($title)->limit(env('ELEMENT_MAX_LENGHT',66));
+
+                $eventAsCollection->put('title',$title);
                 $eventAsCollection->put('date',$event->startDateTime->format('Y-m-d'));
                 $eventAsCollection->put('hour',$event->startDateTime->format('H:i'));
                 $elementAsCollection->put('type','event');
 
-                Log::debug($eventAsCollection);
-
                 $filteredElements->push($eventAsCollection);
-
             }
-
-        }
-
-        
+        }        
 
         //********************************************************************************************************************************/
         //***************************************PROCESSING ELEMENTS INTO 4 FINAL COLLECTIONS*********************************************/
@@ -220,31 +217,19 @@ class Controller extends BaseController
                 $readableDate = $elementDate->format(env('APP_LOCALE_OTHERS_MASK','l,j \de F'));
                 
                 if (!$regularElements->has($element->get('date'))){
-
-                    //Log::debug("it was new");
                     //First task with this date, init the collection
                     $fields = collect();
                     $fields->put("readableDate",$readableDate);
-                    $fields->put("elements",collect($title));  
+                    $fields->put("elements",collect($title));
+                
                     $regularElements->put($element->get('date'),$fields);
-
-                    // Log::debug("regularElements after");
-                    // Log::debug($regularElements);
                 }else{
-                    // Log::debug("it was old");
-                    // Log::debug("regularElements before");
-                    // Log::debug($regularElements);
-
                     $fields = $regularElements->get($element->get('date'));
                     $elements = $fields->get('elements');
                     $elements->push($title);                 
                     $fields->put("elements",$elements);
                     
-                    
                     $regularElements->merge($elements->get('date'),$fields);
-
-                    // Log::debug("regularElements after");
-                    // Log::debug($regularElements);
                     
                 }                
             }
@@ -252,7 +237,7 @@ class Controller extends BaseController
 
         $regularElements = $regularElements->sortKeys();
 
-        log::debug($overdueElements);
+        // log::debug($overdueElements);
         // log::debug($todayElements);
         // log::debug($tomorrowElements);
         //log::debug($regularElements);
