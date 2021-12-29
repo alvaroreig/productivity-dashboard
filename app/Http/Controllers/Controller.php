@@ -137,7 +137,7 @@ class Controller extends BaseController
                 $eventAsCollection->put('title',$title);
                 $eventAsCollection->put('date',$event->startDateTime->format('Y-m-d'));
                 $eventAsCollection->put('hour',$event->startDateTime->format('H:i'));
-                $elementAsCollection->put('type','event');
+                $eventAsCollection->put('type','event');
 
                 $filteredElements->push($eventAsCollection);
             }
@@ -186,6 +186,7 @@ class Controller extends BaseController
 
             // If the task has hour, append it to the title
             $title = ($element->get('hour') === '00:00') ? $element->get('title') : '[' . $element->get('hour') . '] ' . $element->get('title');
+            $type = $element->get('type');
 
             $elementDate = new Date($element->get('date'));
 
@@ -193,54 +194,72 @@ class Controller extends BaseController
                 
                 // Overdue Task
                 $elements = $overdueElements->get('elements');
-                $elements->push($title);
+                $newElement = collect();
+                $newElement->put('title',$title);
+                $newElement->put('type',$type);
+                $elements->push($newElement);
                 $overdueElements->put('elements',$elements);
 
             }else if ($elementDate->equalTo($today)){
            
                 // Today Task
                 $elements = $todayElements->get('elements');
-                $elements->push($title);
+                $newElement = collect();
+                $newElement->put('title',$title);
+                $newElement->put('type',$type);
+                $elements->push($newElement);
                 $todayElements->put('elements',$elements);
 
             }else if ($elementDate->diffInDays($today) == 1){
                
                 // Tomorrow Task
                 $elements = $tomorrowElements->get('elements');
-                $elements->push($title);
+                $newElement = collect();
+                $newElement->put('title',$title);
+                $newElement->put('type',$type);
+                $elements->push($newElement);
                 $tomorrowElements->put('elements',$elements);
             }else{
                 
                 // Regular task (> tomorrow)
-                Log::debug("regular element");
-                Log::debug($element->get('date'));
                 $readableDate = $elementDate->format(env('APP_LOCALE_OTHERS_MASK','l,j \de F'));
                 
                 if (!$regularElements->has($element->get('date'))){
                     //First task with this date, init the collection
                     $fields = collect();
                     $fields->put("readableDate",$readableDate);
-                    $fields->put("elements",collect($title));
+                    
+                    $newElement = collect();
+                    $newElement->put('title',$title);
+                    $newElement->put('type',$type);
+
+                    $elementsArray = collect();
+                    $elementsArray->push($newElement);
+
+                    $fields->put("elements",$elementsArray);
                 
                     $regularElements->put($element->get('date'),$fields);
                 }else{
                     $fields = $regularElements->get($element->get('date'));
                     $elements = $fields->get('elements');
-                    $elements->push($title);                 
-                    $fields->put("elements",$elements);
+
+                    $newElement = collect();
+                    $newElement->put('title',$title);
+                    $newElement->put('type',$type);
+                    $elements->push($newElement);
                     
                     $regularElements->merge($elements->get('date'),$fields);
-                    
-                }                
+                }
+                log::debug($regularElements);
             }
         }
 
         $regularElements = $regularElements->sortKeys();
 
-        // log::debug($overdueElements);
+        //log::debug($overdueElements);
         // log::debug($todayElements);
         // log::debug($tomorrowElements);
-        //log::debug($regularElements);
+        log::debug($regularElements);
 
         return view('index',['date' => $date,'overdueElements' => $overdueElements, 'todayElements' => $todayElements, 'tomorrowElements' => $tomorrowElements,'regularElements' => $regularElements, 'refreshRate' => $refreshRate]);
     }
