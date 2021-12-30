@@ -107,41 +107,45 @@ class Controller extends BaseController
         //********************************************************************************************************************************/
         //***************************************GOOGLE CALENDAR EVENTS PROCESSING********************************************************/
         //********************************************************************************************************************************/
-        $limitDate = new Date('today');
-        $limitDate->addDays(7);
+        if (env('GCAL_QUERY_EVENTS',True)){
 
-        // Get all Google Calendars IDs
-        $calendars = explode(',',env('GCAL_CALENDARS_IDS'));
+            $limitDate = new Date('today');
+            $limitDate->addDays(7);
 
-        Log::debug($calendars);
+            // Get all Google Calendars IDs
+            $calendars = explode(',',env('GCAL_CALENDARS_IDS'));
 
-        foreach($calendars as $calendar){
+            Log::debug($calendars);
 
-            // get all future events on a calendar
-            try {
-                $events = Event::get($today,$limitDate,[],$calendar);
-                Log::info("GCAL API:Success in the first try");
-            }catch (\Exception $e) {
-                $events = Event::get($today,$limitDate,[],$calendar);
-                Log::info("GCAL API:Success in the second try");
-            }
-            
+            foreach($calendars as $calendar){
+
+                // get all future events on a calendar
+                try {
+                    $events = Event::get($today,$limitDate,[],$calendar);
+                    Log::info("GCAL API:Success in the first try");
+                }catch (\Exception $e) {
+                    $events = Event::get($today,$limitDate,[],$calendar);
+                    Log::info("GCAL API:Success in the second try");
+                }
+                
+        
+                foreach ($events as $event){
+                    $eventAsCollection = collect();
     
-            foreach ($events as $event){
-                $eventAsCollection = collect();
-
-                $title = $event->name;
-                // If event title longer than ELEMENT_MAX_LENGHT, truncate it so it fits in Kindle Touch width
-                $title = Str::of($title)->limit(env('ELEMENT_MAX_LENGHT',66));
-
-                $eventAsCollection->put('title',$title);
-                $eventAsCollection->put('date',$event->startDateTime->format('Y-m-d'));
-                $eventAsCollection->put('hour',$event->startDateTime->format('H:i'));
-                $eventAsCollection->put('type','event');
-
-                $filteredElements->push($eventAsCollection);
+                    $title = $event->name;
+                    // If event title longer than ELEMENT_MAX_LENGHT, truncate it so it fits in Kindle Touch width
+                    $title = Str::of($title)->limit(env('ELEMENT_MAX_LENGHT',66));
+    
+                    $eventAsCollection->put('title',$title);
+                    $eventAsCollection->put('date',$event->startDateTime->format('Y-m-d'));
+                    $eventAsCollection->put('hour',$event->startDateTime->format('H:i'));
+                    $eventAsCollection->put('type','event');
+    
+                    $filteredElements->push($eventAsCollection);
+                }
             }
-        }        
+        }
+              
 
         //********************************************************************************************************************************/
         //***************************************PROCESSING ELEMENTS INTO 4 FINAL COLLECTIONS*********************************************/
