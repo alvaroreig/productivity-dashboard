@@ -40,7 +40,7 @@ class Controller extends BaseController
             report($e);
             try {
                 $elements = $Todoist->getAllTasks($options);
-                Log::info("TODOIST API:Success in the second try");
+                Log::warning("TODOIST API:Success in the second try");
             }catch (\Exception $etwo) {
                 Log::error("TODOIST API:Problem in second try");
                 report($e);
@@ -122,8 +122,9 @@ class Controller extends BaseController
                     $events = Event::get($today,$limitDate,[],$calendar);
                     Log::info("GCAL API:Success in the first try");
                 }catch (\Exception $e) {
+                    Log::error("GCAL API:Problem in first try");
                     $events = Event::get($today,$limitDate,[],$calendar);
-                    Log::info("GCAL API:Success in the second try");
+                    Log::warning("GCAL API:Success in the second try");
                 }
                 
         
@@ -257,10 +258,10 @@ class Controller extends BaseController
 
         $regularElements = $regularElements->sortKeys();
 
-        //log::debug($overdueElements);
-        // log::debug($todayElements);
-        // log::debug($tomorrowElements);
-        //log::debug($regularElements);
+        log::debug($overdueElements);
+        log::debug($todayElements);
+        log::debug($tomorrowElements);
+        log::debug($regularElements);
 
         return view('index',['date' => $date,'overdueElements' => $overdueElements, 'todayElements' => $todayElements, 'tomorrowElements' => $tomorrowElements,'regularElements' => $regularElements, 'refreshRate' => $refreshRate]);
     }
