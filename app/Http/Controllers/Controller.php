@@ -115,8 +115,6 @@ class Controller extends BaseController
             // Get all Google Calendars IDs
             $calendars = explode(',',env('GCAL_CALENDARS_IDS'));
 
-            Log::debug($calendars);
-
             foreach($calendars as $calendar){
 
                 // get all future events on a calendar
@@ -254,7 +252,6 @@ class Controller extends BaseController
                     
                     $regularElements->merge($elements->get('date'),$fields);
                 }
-                log::debug($regularElements);
             }
         }
 
@@ -263,7 +260,7 @@ class Controller extends BaseController
         //log::debug($overdueElements);
         // log::debug($todayElements);
         // log::debug($tomorrowElements);
-        log::debug($regularElements);
+        //log::debug($regularElements);
 
         return view('index',['date' => $date,'overdueElements' => $overdueElements, 'todayElements' => $todayElements, 'tomorrowElements' => $tomorrowElements,'regularElements' => $regularElements, 'refreshRate' => $refreshRate]);
     }

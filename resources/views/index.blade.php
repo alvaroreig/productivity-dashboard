@@ -35,7 +35,11 @@
             <h2>{{ $overdueElements->get('readableName') }}</h2>
 
             @foreach($overdueElements->get('elements') as $element)
-            <h3><input type="radio">{{ $element->get('title') }}</h3>
+                @if($element->get('type') === 'task' )
+                    <h3><div>[T] {{ $element->get('title') }}</div></h3>
+                @else
+                    <h3><div>[C] {{ $element->get('title') }}</div></h3>
+                @endif    
             @endforeach 
         @endif
 
@@ -43,7 +47,11 @@
             <h2>{{ $todayElements->get('readableName') }}</h2>
 
             @foreach($todayElements->get('elements') as $element)
-            <h3><input type="radio">{{ $element->get('title') }}</h3>
+                @if($element->get('type') === 'task' )
+                    <h3><div>[T] {{ $element->get('title') }}</div></h3>
+                @else
+                    <h3><div>[C] {{ $element->get('title') }}</div></h3>
+                @endif
             @endforeach 
         @endif
 
@@ -51,7 +59,11 @@
             <h2>{{ $tomorrowElements->get('readableName') }}</h2>
 
             @foreach($tomorrowElements->get('elements') as $element)
-            <h3><input type="radio">{{ $element->get('title') }}</h3>
+                @if($element->get('type') === 'task' )
+                    <h3><div>[T] {{ $element->get('title') }}</div></h3>
+                @else
+                    <h3><div>[C] {{ $element->get('title') }}</div></h3>
+                @endif 
             @endforeach 
         @endif
 
@@ -61,7 +73,11 @@
                 <h2>{{ $regularElements->get($date)->get('readableDate') }}</h2>
 
                 @foreach($regularElements->get($date)->get('elements') as $element)
-                    <h3><input type="radio">{{ $element->get('title') }}</h3>
+                    @if($element->get('type') === 'task' )
+                        <h3><div>[T] {{ $element->get('title') }}</div></h3>
+                    @else
+                        <h3><div>[C] {{ $element->get('title') }}</div></h3>
+                    @endif 
                 @endforeach
 
             @endforeach
