@@ -59,55 +59,56 @@ class Controller extends BaseController
         //********************************************************************************************************************************/
         //***************************************TODOIST TASKS PROCESSING*****************************************************************/
         //********************************************************************************************************************************/
-        foreach ($elements as $element){           
+        if (env('TODOIST_ENABLED',False)){
+            foreach ($elements as $element){           
 
-            // Filter tasks removing links (it makes the task too long for the kindle screen)
-            $content = preg_replace('/\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|$!:,.;]*[A-Z0-9+&@#\/%=~_|$]/i', '', $element['content']);
+                // Filter tasks removing links (it makes the task too long for the kindle screen)
+                $content = preg_replace('/\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|$!:,.;]*[A-Z0-9+&@#\/%=~_|$]/i', '', $element['content']);
 
-            if (strpos($content,']()') !== false ){
-                // The ']()' string was found, so it was a link with text. Remove clutter
-                $content = str_replace(']()',']',$content);
+                if (strpos($content,']()') !== false ){
+                    // The ']()' string was found, so it was a link with text. Remove clutter
+                    $content = str_replace(']()',']',$content);
+                }
+
+                $elementAsCollection = collect();
+
+                // If the task has hour and the setting is on, append [HH:MM] to the left of the title
+                if (env('TODOIST_ADD_HOUR_TO_TASK',True) & isset($element['due']['datetime'])){
+
+                    // Get datetime in a date object and apply the timezone
+                    $dateWithHour = new Date($element['due']['datetime']);
+                    $dateWithHour->setTimezone(env('APP_TIMEZONE','Europe/Madrid'));
+
+                    // // Add a '0' to avoid times like 9:15 (instead of 09:15) or 12:4 (instead of 12:04)
+                    $hourString = ($dateWithHour->hour < 10) ? '0' . strval($dateWithHour->hour) : strval($dateWithHour->hour);
+                    $minuteString = ($dateWithHour->minute < 10) ? '0' . strval($dateWithHour->minute) : strval($dateWithHour->minute);
+
+                    $elementAsCollection->put('hour',$hourString . ':' . $minuteString);
+                    // // Modify the task title
+                    // $content = '[' . $hourString . ':' . $minuteString . '] ' . $content;
+
+                }else{
+                    /*Use '00:00' as hour in tasks without hour, as we want this tasks to appear before the ordered
+                    tasks with hour*/ 
+                    $elementAsCollection->put('hour','00:00'); 
+                }
+
+                // If task longer than ELEMENT_MAX_LENGHT, truncate it so it fits in Kindle Touch width
+                $content = Str::of($content)->limit(env('ELEMENT_MAX_LENGHT',66));
+
+                // Add the processed task to $filteredElements
+                
+                $elementAsCollection->put('date',$element['due']['date']);
+                $elementAsCollection->put('title',$content);
+                $elementAsCollection->put('type','task');
+                $filteredElements->push($elementAsCollection);
             }
 
-            $elementAsCollection = collect();
-
-            // If the task has hour and the setting is on, append [HH:MM] to the left of the title
-            if (env('ADD_HOUR',True) & isset($element['due']['datetime'])){
-
-                // Get datetime in a date object and apply the timezone
-                $dateWithHour = new Date($element['due']['datetime']);
-                $dateWithHour->setTimezone(env('APP_TIMEZONE','Europe/Madrid'));
-
-                // // Add a '0' to avoid times like 9:15 (instead of 09:15) or 12:4 (instead of 12:04)
-                $hourString = ($dateWithHour->hour < 10) ? '0' . strval($dateWithHour->hour) : strval($dateWithHour->hour);
-                $minuteString = ($dateWithHour->minute < 10) ? '0' . strval($dateWithHour->minute) : strval($dateWithHour->minute);
-
-                $elementAsCollection->put('hour',$hourString . ':' . $minuteString);
-                // // Modify the task title
-                // $content = '[' . $hourString . ':' . $minuteString . '] ' . $content;
-
-            }else{
-                /*Use '00:00' as hour in tasks without hour, as we want this tasks to appear before the ordered
-                tasks with hour*/ 
-                $elementAsCollection->put('hour','00:00'); 
-            }
-
-            // If task longer than ELEMENT_MAX_LENGHT, truncate it so it fits in Kindle Touch width
-            $content = Str::of($content)->limit(env('ELEMENT_MAX_LENGHT',66));
-
-            // Add the processed task to $filteredElements
-            
-            $elementAsCollection->put('date',$element['due']['date']);
-            $elementAsCollection->put('title',$content);
-            $elementAsCollection->put('type','task');
-            $filteredElements->push($elementAsCollection);
         }
-
-
         //********************************************************************************************************************************/
         //***************************************GOOGLE CALENDAR EVENTS PROCESSING********************************************************/
         //********************************************************************************************************************************/
-        if (env('GCAL_QUERY_EVENTS',True)){
+        if (env('GCAL_ENABLED',False)){
 
             $limitDate = new Date('today');
             $limitDate->addDays(7);
@@ -187,7 +188,7 @@ class Controller extends BaseController
 
         foreach($filteredElements as $element){
 
-            // If the task has hour, append it to the title
+            // If the element has hour (Google calendar elements always will, todoist's doesn't have to), append it to the title
             $title = ($element->get('hour') === '00:00') ? $element->get('title') : '[' . $element->get('hour') . '] ' . $element->get('title');
             $type = $element->get('type');
 
@@ -195,7 +196,7 @@ class Controller extends BaseController
 
             if ($today->diffInHours($elementDate,false) < 0){
                 
-                // Overdue Task
+                // Overdue element
                 $elements = $overdueElements->get('elements');
                 $newElement = collect();
                 $newElement->put('title',$title);
@@ -205,7 +206,7 @@ class Controller extends BaseController
 
             }else if ($elementDate->equalTo($today)){
            
-                // Today Task
+                // Today element
                 $elements = $todayElements->get('elements');
                 $newElement = collect();
                 $newElement->put('title',$title);
@@ -215,7 +216,7 @@ class Controller extends BaseController
 
             }else if ($elementDate->diffInDays($today) == 1){
                
-                // Tomorrow Task
+                // Tomorrow element
                 $elements = $tomorrowElements->get('elements');
                 $newElement = collect();
                 $newElement->put('title',$title);
@@ -224,11 +225,11 @@ class Controller extends BaseController
                 $tomorrowElements->put('elements',$elements);
             }else{
                 
-                // Regular task (> tomorrow)
+                // Regular element (> tomorrow)
                 $readableDate = $elementDate->format(env('APP_LOCALE_OTHERS_MASK','l,j \de F'));
                 
                 if (!$regularElements->has($element->get('date'))){
-                    //First task with this date, init the collection
+                    //First element with this date, init the collection
                     $fields = collect();
                     $fields->put("readableDate",$readableDate);
                     
