@@ -17,9 +17,13 @@
 
         <style>
             body {
-                /* font-family: 'Nunito', sans-serif; */
+                font-family: Georgia, sans-serif;
                 font-size: 14px;
                 padding-left: 20px;
+            }
+
+            h3 {
+                padding-left: 10px;
             }
         </style>
     </head>
@@ -32,6 +36,7 @@
         </h1>
 
         @if($overdueElements->get('elements')->count() > 0 )
+        <div class="overdue">
             <h2>{{ $overdueElements->get('readableName') }}</h2>
 
             @foreach($overdueElements->get('elements') as $element)
@@ -41,9 +46,11 @@
                     <h3><div>[C] {{ $element->get('title') }}</div></h3>
                 @endif    
             @endforeach 
+        </div>
         @endif
 
         @if($todayElements->get('elements')->count() > 0 )
+        <div class="today">
             <h2>{{ $todayElements->get('readableName') }}</h2>
 
             @foreach($todayElements->get('elements') as $element)
@@ -52,10 +59,12 @@
                 @else
                     <h3><div>[C] {{ $element->get('title') }}</div></h3>
                 @endif
-            @endforeach 
+            @endforeach
+        </div>
         @endif
 
         @if($tomorrowElements->get('elements')->count() > 0 )
+        <div class="tomorrow">
             <h2>{{ $tomorrowElements->get('readableName') }}</h2>
 
             @foreach($tomorrowElements->get('elements') as $element)
@@ -65,13 +74,14 @@
                     <h3><div>[C] {{ $element->get('title') }}</div></h3>
                 @endif 
             @endforeach 
+        </div>
         @endif
 
         @if($regularElements->keys()->count() > 0 )
-            
+        <div class="others">            
             @foreach($regularElements->keys() as $date)
                 <h2>{{ $regularElements->get($date)->get('readableDate') }}</h2>
-
+                <div id="{{$date}}">
                 @foreach($regularElements->get($date)->get('elements') as $element)
                     @if($element->get('type') === 'task' )
                         <h3><div>[T] {{ $element->get('title') }}</div></h3>
@@ -79,8 +89,9 @@
                         <h3><div>[C] {{ $element->get('title') }}</div></h3>
                     @endif 
                 @endforeach
-
+            </div>
             @endforeach
+        </div>
         @endif
 
     </body>
