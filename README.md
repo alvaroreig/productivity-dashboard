@@ -40,6 +40,8 @@ You can customize (localize) the header mask (APP_DATE_HEADER_MASK) and the keyw
 * APP_LOCALE_TOMORROW
 * APP_LOCALE_OTHERS_MASK
 
+You can also set a flag (ADD_HOUR) to append the hour in [HH:MM] before the title in tasks with hour.
+
 ### Other
 
 * The view will autorefresh every 3600 seconds. You can change that setting in REFRESH_RATE_IN_SECONDS.
