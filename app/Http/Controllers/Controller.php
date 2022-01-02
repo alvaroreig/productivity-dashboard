@@ -62,13 +62,18 @@ class Controller extends BaseController
         if (env('TODOIST_ENABLED',False)){
             foreach ($elements as $element){           
 
-                // Filter tasks removing links (it makes the task too long for the kindle screen)
-                $content = preg_replace('/\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|$!:,.;]*[A-Z0-9+&@#\/%=~_|$]/i', '', $element['content']);
+                if (env('TODOIST_REMOVE_LINKS',True)){
+                    // Filter tasks removing links (it makes the task too long for the kindle screen)
+                    $content = preg_replace('/\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|$!:,.;]*[A-Z0-9+&@#\/%=~_|$]/i', '', $element['content']);
 
-                if (strpos($content,']()') !== false ){
-                    // The ']()' string was found, so it was a link with text. Remove clutter
-                    $content = str_replace(']()',']',$content);
+                    if (strpos($content,']()') !== false ){
+                        // The ']()' string was found, so it was a link with text. Remove clutter
+                        $content = str_replace(']()',']',$content);
+                    }
+                }else{
+                    $content = $element['content'];
                 }
+                
 
                 $elementAsCollection = collect();
 
