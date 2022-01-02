@@ -23,7 +23,7 @@ class Controller extends BaseController
     {
 
         $today = new Date('today');
-        $refreshRate = env('REFRESH_RATE_IN_SECONDS',1800);
+        $refreshRate = env('REFRESH_RATE_IN_SECONDS',3600);
 
         // Get tasks from the API
         $Todoist = new TodoistClient(env('TODOIST_API_KEY'));
