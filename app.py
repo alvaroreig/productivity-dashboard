@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 import os
 import logging
 
+from todoist_api_python.api import TodoistAPI
 
 load_dotenv()
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s -  %(levelname)s-  %(message)s')
@@ -20,10 +21,19 @@ app = Flask(__name__)
 # Instalar dependencias
 # pip install -r requirements.txt
 
-example = os.environ.get('TODOIST_API_KEY');
-logging.debug(example)
+
 @app.route("/")
 def home():
+
+    api = TodoistAPI(os.getenv('TODOIST_API_KEY'))
+    filter = os.getenv('TODOIST_FILTER')
+    tasks = api.get_tasks(filter=filter)
+    logging.debug(api)
+
+    
+    #tasks = api.get_tasks()
+    logging.debug('Recovered ' + str(len(tasks)) + ' task(s)')
+
     return render_template(
         "index.html",
         date=datetime.now()
