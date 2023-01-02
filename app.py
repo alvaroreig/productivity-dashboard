@@ -15,12 +15,14 @@ app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return "Hello, Flask!"
+    return render_template(
+        "index.html",
+        date=datetime.now()
+    )
 
 @app.route("/hello/<name>")
 def hello_there(name = None):
     return render_template(
-        "hello_there.html",
-        name=name,
+        "index.html",
         date=datetime.now()
     )
