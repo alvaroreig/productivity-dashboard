@@ -49,5 +49,19 @@
         </div>
         {% endif %}
 
+        {% if after|length > 0 %}
+        
+            {% for key, value in after %}
+            <div class= {{key}} >
+                <h2>{{ key }}</h2>
+                {% for element in value %}
+                    <h3><div>[T] {{ element }}</div></h3>
+                {% endfor %}
+            </div>
+            
+            
+            {% endfor %}
+        {% endif %}
+
     </body>
 </html>
