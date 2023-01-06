@@ -47,6 +47,7 @@ def home():
 
     overdue = []
     today_list = []
+    tomorrow = []
 
     for task in tasks:
         logging.debug('task content: ' + task.content)
@@ -61,10 +62,14 @@ def home():
         
         logging.debug('task parsed due datetime: ' + str(parsed_date))
 
-        if (parsed_date.day == today.day and parsed_date.month == today.month and parsed_date.year == today.year):
-            today_list.append(task.content)
-        elif (parsed_date < today):
+        days_between_dates = parsed_date.date() - today.date()
+        
+        if (days_between_dates.days < 0):
             overdue.append(task.content)
+        elif (days_between_dates.days == 0):
+            today_list.append(task.content)
+        elif (days_between_dates.days == 1):
+            tomorrow.append(task.content)
 
 
     logging.debug("overdue tasks: " + str(len(overdue)))
@@ -73,9 +78,13 @@ def home():
     logging.debug("today tasks: " + str(len(today_list)))
     logging.debug(today_list)
 
+    logging.debug("tomorrow tasks: " + str(len(tomorrow)))
+    logging.debug(tomorrow)
+
     return render_template(
         "index.html",
         date=today.strftime('%A,%d %B %Y'),
         overdue=overdue,
-        today = today_list
+        today = today_list,
+        tomorrow = tomorrow
     )
