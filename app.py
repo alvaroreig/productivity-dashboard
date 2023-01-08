@@ -32,7 +32,9 @@ else:
 @app.route("/")
 def home():
 
-    locale.setlocale(locale.LC_TIME, os.getenv('LOCALE'))
+    if os.getenv('LOCALE') is not None:
+        locale.setlocale(locale.LC_TIME, os.getenv('LOCALE'))
+    
     api = TodoistAPI(os.getenv('TODOIST_API_KEY'))
     filter = os.getenv('TODOIST_FILTER')
     today = datetime.today()
