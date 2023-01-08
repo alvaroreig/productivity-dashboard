@@ -24,10 +24,16 @@ else:
 # tutorial
 # https://code.visualstudio.com/docs/python/tutorial-flask
 # https://medium.com/@jtpaasch/the-right-way-to-use-virtual-environments-1bc255a0cba7
+# https://testdriven.io/blog/flask-render-deployment/
+
+# Guardar dependencias
+# pip freeze > requirements.txt
 
 # Instalar dependencias
 # pip install -r requirements.txt
 
+# Arracar server local con binding a todo
+# flask run --host 0.0.0.0
 
 @app.route("/")
 def home():
@@ -61,31 +67,36 @@ def home():
     for task in tasks:
         logging.debug('task content: ' + task.content)
         logging.debug('task datetine ' + str(task.due.datetime))
+
+        if 'http' in task.content:
+            task_content = re.sub(r"http\S+", "", task.content)
+        else:
+            task_content = task.content
         try:
             if (task.due.datetime is not None):
                 parsed_date=datetime.strptime(task.due.datetime,"%Y-%m-%dT%H:%M:%SZ")
             else:
                 parsed_date=datetime.strptime(task.due.date,"%Y-%m-%d")
         except Exception as e:
-            logging.error("Parsing error,task " + task.content)
+            logging.error("Parsing error,task " + task_content)
         
         logging.debug('task parsed due datetime: ' + str(parsed_date))
 
         days_between_dates = parsed_date.date() - today.date()
         
         if (days_between_dates.days < 0):
-            overdue.append(task.content)
+            overdue.append(task_content)
         elif (days_between_dates.days == 0):
-            today_list.append(task.content)
+            today_list.append(task_content)
         elif (days_between_dates.days == 1):
-            tomorrow.append(task.content)
+            tomorrow.append(task_content)
         else:
             task_date_clean = str(parsed_date.date())
             if (task_date_clean in after):
                 tasks_in_date = after[task_date_clean]
             else:
                 tasks_in_date = []
-            tasks_in_date.append(task.content)
+            tasks_in_date.append(task_content)
             after[task_date_clean] = tasks_in_date
 
     after = sorted(after.items())
