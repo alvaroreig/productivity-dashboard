@@ -11,9 +11,15 @@ import locale
 from todoist_api_python.api import TodoistAPI
 
 load_dotenv()
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s -  %(levelname)s-  %(message)s')
 
 app = Flask(__name__)
+
+if os.getenv('GUNICORN') == 'True':
+    gunicorn_error_logger = logging.getLogger('gunicorn.error')
+    app.logger.handlers.extend(gunicorn_error_logger.handlers)
+    app.logger.setLevel(logging.DEBUG)
+else:
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s -  %(levelname)s-  %(message)s')
 
 # tutorial
 # https://code.visualstudio.com/docs/python/tutorial-flask
