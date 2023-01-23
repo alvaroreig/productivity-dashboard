@@ -174,9 +174,6 @@ def home():
                 elements_in_date = []
             elements_in_date.append(event_clean_title)
             after[task_date_clean] = elements_in_date
-    #logging.debug(gcal_events)
-    #todo: 2023-01-30T09:00:00Z
-    #gcak 2023-01-23T17:45:00+01:00
 
         add_element(days_between_dates.days,global_elements,event_clean_title,truncared_parsed_date)
 
@@ -203,6 +200,10 @@ def home():
         logging.debug(pformat(section))
         elements = section['elements'];
         logging.debug(pformat(elements))
+        elements = sorted(elements, key=itemgetter('datetime')) 
+        logging.debug(elements)
+        section['elements'] = elements
+        global_elements[key] = section
 
     global_elements = sorted(global_elements.items())
 
