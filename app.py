@@ -139,43 +139,49 @@ def home():
 
 
 
-    gcal_events = get_gcal_events();
-    for event in gcal_events:
-        logging.debug(event['summary'])
-        event_datetime= event['start'].get('dateTime')
-        logging.debug(event_datetime)
-        # TODO. This is a dirty hack. I need to remove the datezone offset in a more elegant manner.
-        truncated_due = event_datetime[0:19]
-        logging.debug(truncated_due)
-        truncared_parsed_date=datetime.datetime.strptime(truncated_due,"%Y-%m-%dT%H:%M:%S")
-        logging.debug(truncared_parsed_date)
-        
-        
-        days_between_dates = truncared_parsed_date.date() - today.date()
-        logging.debug(days_between_dates.days)
+    gcal_calendar_ids = os.getenv('GCAL_CALENDAR_IDS').split(',')
+    logging.debug(pformat(gcal_calendar_ids))
+
+    for calendar in gcal_calendar_ids:
+        gcal_events = get_gcal_events(calendar);
+        for event in gcal_events:
+            logging.debug(event['summary'])
+            event_datetime= event['start'].get('dateTime')
+            logging.debug(event_datetime)
+            # TODO. This is a dirty hack. I need to remove the datezone offset in a more elegant manner.
+            truncated_due = event_datetime[0:19]
+            logging.debug(truncated_due)
+            truncared_parsed_date=datetime.datetime.strptime(truncated_due,"%Y-%m-%dT%H:%M:%S")
+            logging.debug(truncared_parsed_date)
+            
+            
+            days_between_dates = truncared_parsed_date.date() - today.date()
+            logging.debug(days_between_dates.days)
 
 
-        if (truncared_parsed_date.hour != 0):
-            hour = "0" + str(truncared_parsed_date.hour) if truncared_parsed_date.hour < 10 else str(truncared_parsed_date.hour)
-            minute = "0" + str(truncared_parsed_date.minute) if truncared_parsed_date.minute < 10 else str(truncared_parsed_date.minute)
-            event_clean_title = "[C] " + "[" + hour + ":" + minute + "] " + event['summary']
-        else:
-            event_clean_title = "[C] " + event['summary']
-        
-        if (days_between_dates.days == 0):
-            today_list.append(event_clean_title)
-        elif (days_between_dates.days == 1):
-            tomorrow.append(event_clean_title)
-        else:
-            task_date_clean = str(truncared_parsed_date.date())
-            if (task_date_clean in after):
-                elements_in_date = after[task_date_clean]
+            if (truncared_parsed_date.hour != 0):
+                hour = "0" + str(truncared_parsed_date.hour) if truncared_parsed_date.hour < 10 else str(truncared_parsed_date.hour)
+                minute = "0" + str(truncared_parsed_date.minute) if truncared_parsed_date.minute < 10 else str(truncared_parsed_date.minute)
+                event_clean_title = "[C] " + "[" + hour + ":" + minute + "] " + event['summary']
             else:
-                elements_in_date = []
-            elements_in_date.append(event_clean_title)
-            after[task_date_clean] = elements_in_date
+                event_clean_title = "[C] " + event['summary']
+            
+            if (days_between_dates.days == 0):
+                today_list.append(event_clean_title)
+            elif (days_between_dates.days == 1):
+                tomorrow.append(event_clean_title)
+            else:
+                task_date_clean = str(truncared_parsed_date.date())
+                if (task_date_clean in after):
+                    elements_in_date = after[task_date_clean]
+                else:
+                    elements_in_date = []
+                elements_in_date.append(event_clean_title)
+                after[task_date_clean] = elements_in_date
 
-        add_element(days_between_dates.days,global_elements,event_clean_title,truncared_parsed_date)
+            add_element(days_between_dates.days,global_elements,event_clean_title,truncared_parsed_date)
+
+
 
     after = sorted(after.items())
 
@@ -217,7 +223,7 @@ def home():
         global_elements = global_elements
     )
 
-def get_gcal_events():
+def get_gcal_events(calendar):
     # If modifying these scopes, delete the file token.json.
     SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
 
@@ -252,7 +258,7 @@ def get_gcal_events():
         now = datetime.datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time
         print('Getting the upcoming 10 events')
 
-        events_result = service.events().list(calendarId='771b9ig6pbv1vkv07kia1jt28g@group.calendar.google.com', timeMin=now,
+        events_result = service.events().list(calendarId=calendar, timeMin=now,
                                               maxResults=20, singleEvents=True,
                                               orderBy='startTime',timeZone='Europe/Madrid').execute()
         events = events_result.get('items', [])
