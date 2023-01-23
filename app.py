@@ -12,7 +12,7 @@ import locale
 from pprint import pformat
 
 from todoist_api_python.api import TodoistAPI
-
+from operator import itemgetter
 
 
 import datetime
@@ -149,8 +149,11 @@ def home():
         logging.debug(truncated_due)
         truncared_parsed_date=datetime.datetime.strptime(truncated_due,"%Y-%m-%dT%H:%M:%S")
         logging.debug(truncared_parsed_date)
+        
+        
         days_between_dates = truncared_parsed_date.date() - today.date()
         logging.debug(days_between_dates.days)
+
 
         if (truncared_parsed_date.hour != 0):
             hour = "0" + str(truncared_parsed_date.hour) if truncared_parsed_date.hour < 10 else str(truncared_parsed_date.hour)
@@ -175,6 +178,8 @@ def home():
     #todo: 2023-01-30T09:00:00Z
     #gcak 2023-01-23T17:45:00+01:00
 
+        add_element(days_between_dates.days,global_elements,event_clean_title,truncared_parsed_date)
+
     after = sorted(after.items())
 
     logging.debug("overdue tasks: " + str(len(overdue)))
@@ -192,13 +197,23 @@ def home():
     logging.debug("global")
     logging.debug(pformat(global_elements))
 
+    for key in global_elements:
+        logging.debug(key)
+        section = global_elements[key]
+        logging.debug(pformat(section))
+        elements = section['elements'];
+        logging.debug(pformat(elements))
+
+    global_elements = sorted(global_elements.items())
+
     return render_template(
         "index.html",
         date=today.strftime('%A,%d %B %Y'),
         overdue=overdue,
         today = today_list,
         tomorrow = tomorrow,
-        after = after
+        after = after,
+        global_elements = global_elements
     )
 
 def get_gcal_events():
@@ -237,7 +252,7 @@ def get_gcal_events():
         print('Getting the upcoming 10 events')
 
         events_result = service.events().list(calendarId='771b9ig6pbv1vkv07kia1jt28g@group.calendar.google.com', timeMin=now,
-                                              maxResults=10, singleEvents=True,
+                                              maxResults=20, singleEvents=True,
                                               orderBy='startTime',timeZone='Europe/Madrid').execute()
         events = events_result.get('items', [])
 
@@ -275,8 +290,10 @@ def add_element(section_index,list,element_title,element_datetime):
             case _:
                 today = datetime.datetime.now()
                 next = today + datetime.timedelta(days = section_index)
-                section_header = next.strftime('%A')
-                
+                if section_index < 7:
+                    section_header = next.strftime('%A')
+                else:
+                    section_header = element_datetime.strftime('%A,%d %B')
 
         section_elements = []
         section = {"header" : section_header}
