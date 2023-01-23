@@ -122,6 +122,7 @@ def home():
         logging.debug(event['summary'])
         event_datetime= event['start'].get('dateTime')
         logging.debug(event_datetime)
+        # TODO. This is a dirty hack. I need to remove the datezone offset in a more elegant manner.
         truncated_due = event_datetime[0:19]
         logging.debug(truncated_due)
         truncared_parsed_date=datetime.datetime.strptime(truncated_due,"%Y-%m-%dT%H:%M:%S")
@@ -129,19 +130,24 @@ def home():
         days_between_dates = truncared_parsed_date.date() - today.date()
         logging.debug(days_between_dates.days)
 
-
+        if (truncared_parsed_date.hour != 0):
+            hour = "0" + str(truncared_parsed_date.hour) if truncared_parsed_date.hour < 10 else str(truncared_parsed_date.hour)
+            minute = "0" + str(truncared_parsed_date.minute) if truncared_parsed_date.minute < 10 else str(truncared_parsed_date.minute)
+            event_clean_title = "[C] " + "[" + hour + ":" + minute + "] " + event['summary']
+        else:
+            event_clean_title = "[C] " + event['summary']
+        
         if (days_between_dates.days == 0):
-            today_list.append("[C] " + event['summary'])
+            today_list.append(event_clean_title)
         elif (days_between_dates.days == 1):
-            tomorrow.append("[C] " + event['summary'])
+            tomorrow.append(event_clean_title)
         else:
             task_date_clean = str(truncared_parsed_date.date())
             if (task_date_clean in after):
                 elements_in_date = after[task_date_clean]
             else:
                 elements_in_date = []
-            new_element = "[C] " + event['summary']
-            elements_in_date.append(new_element)
+            elements_in_date.append(event_clean_title)
             after[task_date_clean] = elements_in_date
     #logging.debug(gcal_events)
     #todo: 2023-01-30T09:00:00Z
