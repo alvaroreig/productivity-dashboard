@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta http-equiv="refresh" content=30000>
+        <meta http-equiv="refresh" content=14400>
 
         <title>Productivity Dashboard</title>
 
@@ -26,7 +26,7 @@
         <div class="overdue">
             <h2>Overdue</h2>
             {% for overdue_element in overdue %}
-                <h3><div>[T] {{ overdue_element }}</div></h3>
+                <h3><div>{{ overdue_element }}</div></h3>
             {% endfor %}
         </div>
         {% endif %}
@@ -35,7 +35,7 @@
         <div class="today">
             <h2>Today</h2>
             {% for today_element in today %}
-                <h3><div>[T] {{ today_element }}</div></h3>
+                <h3><div>{{ today_element }}</div></h3>
             {% endfor %}
         </div>
         {% endif %}
@@ -44,7 +44,7 @@
         <div class="tomorrow">
             <h2>Tomorrow</h2>
             {% for element in tomorrow %}
-                <h3><div>[T] {{ element }}</div></h3>
+                <h3><div>{{ element }}</div></h3>
             {% endfor %}
         </div>
         {% endif %}
@@ -55,7 +55,7 @@
             <div class= {{key}} >
                 <h2>{{ key }}</h2>
                 {% for element in value %}
-                    <h3><div>[T] {{ element }}</div></h3>
+                    <h3><div>{{ element }}</div></h3>
                 {% endfor %}
             </div>
             

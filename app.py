@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import re
 from datetime import datetime,date
 
@@ -9,6 +11,17 @@ import logging
 import locale
 
 from todoist_api_python.api import TodoistAPI
+
+
+
+import datetime
+import os.path
+
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 load_dotenv()
 
@@ -35,6 +48,9 @@ else:
 # Arracar server local con binding a todo
 # flask run --host 0.0.0.0
 
+ # Dependencias
+ #  pip3.10 install flask python-dotenv
+
 @app.route("/")
 def home():
 
@@ -43,7 +59,7 @@ def home():
     
     api = TodoistAPI(os.getenv('TODOIST_API_KEY'))
     filter = os.getenv('TODOIST_FILTER')
-    today = datetime.today()
+    today = datetime.datetime.today()
     logging.debug("today: " + str(today))
 
     try:
@@ -69,14 +85,14 @@ def home():
         logging.debug('task datetine ' + str(task.due.datetime))
 
         if 'http' in task.content:
-            task_content = re.sub(r"http\S+", "", task.content)
+            task_content = "[T] " + re.sub(r"http\S+", "", task.content)
         else:
-            task_content = task.content
+            task_content = "[T] " + task.content
         try:
             if (task.due.datetime is not None):
-                parsed_date=datetime.strptime(task.due.datetime,"%Y-%m-%dT%H:%M:%SZ")
+                parsed_date=datetime.datetime.strptime(task.due.datetime,"%Y-%m-%dT%H:%M:%SZ")
             else:
-                parsed_date=datetime.strptime(task.due.date,"%Y-%m-%d")
+                parsed_date=datetime.datetime.strptime(task.due.date,"%Y-%m-%d")
         except Exception as e:
             logging.error("Parsing error,task " + task_content)
         
@@ -98,6 +114,38 @@ def home():
                 tasks_in_date = []
             tasks_in_date.append(task_content)
             after[task_date_clean] = tasks_in_date
+
+
+
+    gcal_events = get_gcal_events();
+    for event in gcal_events:
+        logging.debug(event['summary'])
+        event_datetime= event['start'].get('dateTime')
+        logging.debug(event_datetime)
+        truncated_due = event_datetime[0:19]
+        logging.debug(truncated_due)
+        truncared_parsed_date=datetime.datetime.strptime(truncated_due,"%Y-%m-%dT%H:%M:%S")
+        logging.debug(truncared_parsed_date)
+        days_between_dates = truncared_parsed_date.date() - today.date()
+        logging.debug(days_between_dates.days)
+
+
+        if (days_between_dates.days == 0):
+            today_list.append("[C] " + event['summary'])
+        elif (days_between_dates.days == 1):
+            tomorrow.append("[C] " + event['summary'])
+        else:
+            task_date_clean = str(truncared_parsed_date.date())
+            if (task_date_clean in after):
+                elements_in_date = after[task_date_clean]
+            else:
+                elements_in_date = []
+            new_element = "[C] " + event['summary']
+            elements_in_date.append(new_element)
+            after[task_date_clean] = elements_in_date
+    #logging.debug(gcal_events)
+    #todo: 2023-01-30T09:00:00Z
+    #gcak 2023-01-23T17:45:00+01:00
 
     after = sorted(after.items())
 
@@ -121,3 +169,59 @@ def home():
         tomorrow = tomorrow,
         after = after
     )
+
+def get_gcal_events():
+    # If modifying these scopes, delete the file token.json.
+    SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
+
+    # Tutorial seguido
+    # https://developers.google.com/calendar/api/quickstart/python?hl=en
+
+    """Shows basic usage of the Google Calendar API.
+    Prints the start and name of the next 10 events on the user's calendar.
+    """
+    creds = None
+    # The file token.json stores the user's access and refresh tokens, and is
+    # created automatically when the authorization flow completes for the first
+    # time.
+    if os.path.exists('token.json'):
+        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    # If there are no (valid) credentials available, let the user log in.
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                'credentials.json', SCOPES)
+            creds = flow.run_local_server(port=0)
+        # Save the credentials for the next run
+        with open('token.json', 'w') as token:
+            token.write(creds.to_json())
+
+    try:
+        service = build('calendar', 'v3', credentials=creds)
+
+        # Call the Calendar API
+        now = datetime.datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time
+        print('Getting the upcoming 10 events')
+
+        events_result = service.events().list(calendarId='771b9ig6pbv1vkv07kia1jt28g@group.calendar.google.com', timeMin=now,
+                                              maxResults=10, singleEvents=True,
+                                              orderBy='startTime',timeZone='Europe/Madrid').execute()
+        events = events_result.get('items', [])
+
+        if not events:
+            print('No upcoming events found.')
+            return
+
+        # Prints the start and name of the next 10 events
+        return events
+        # for event in events:
+        #     start = event['start'].get('dateTime', event['start'].get('date'))
+        #     print(start, event['summary'])
+        #     print(event)
+
+    except HttpError as error:
+        print('An error occurred: %s' % error)
+
+    return 3
