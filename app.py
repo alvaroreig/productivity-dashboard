@@ -1,7 +1,7 @@
 from __future__ import print_function
 
 import re
-from datetime import datetime,date
+import datetime
 
 from flask import Flask
 from flask import render_template
@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 import os
 import logging
 import locale
+from pprint import pformat
 
 from todoist_api_python.api import TodoistAPI
 
@@ -75,6 +76,18 @@ def home():
     logging.info('Recovered ' + str(len(tasks)) + ' task(s)')
     #logging.debug(tasks)
 
+    global_elements = {}
+    # Dic with dictionaries that contains title, elements
+    # -1 => overdue elements
+    # 0 => today elements
+    # 1 => tomorrow elements
+    # 2...n other days elements
+    #
+    # Each key contains an array with dictionaries with two elements: datetime and title
+    # Example
+    #[{}]
+
+
     overdue = []
     today_list = []
     tomorrow = []
@@ -92,7 +105,8 @@ def home():
             if (task.due.datetime is not None):
                 parsed_date=datetime.datetime.strptime(task.due.datetime,"%Y-%m-%dT%H:%M:%SZ")
                 #TODO Dirty hack: todoist returns UTC, I need to convert it to my zonetime more elegantly.
-                hour = "0" + str(parsed_date.hour + 1) if parsed_date.hour + 1 < 10 else str(parsed_date.hour + 1)
+                parsed_date = parsed_date.replace(hour=parsed_date.hour + 1)
+                hour = "0" + str(parsed_date.hour) if parsed_date.hour < 10 else str(parsed_date.hour )
                 minute = "0" + str(parsed_date.minute) if parsed_date.minute < 10 else str(parsed_date.minute)
                 task_clean_title = "[T] " + "[" + hour + ":" + minute + "] " + task_content
             else:
@@ -100,11 +114,13 @@ def home():
                 task_clean_title = "[T] " + task_content
         except Exception as e:
             logging.error("Parsing error,task " + task_content)
+            task_clean_title = "[T] " + task_content
         
         logging.debug('task parsed due datetime: ' + str(parsed_date))
 
         days_between_dates = parsed_date.date() - today.date()
-        
+        add_element(days_between_dates.days,global_elements,task_clean_title,parsed_date)
+
         if (days_between_dates.days < 0):
             overdue.append(task_clean_title)
         elif (days_between_dates.days == 0):
@@ -119,6 +135,7 @@ def home():
                 tasks_in_date = []
             tasks_in_date.append(task_clean_title)
             after[task_date_clean] = tasks_in_date
+
 
 
 
@@ -171,6 +188,9 @@ def home():
 
     logging.debug("after tasks: " + str(len(after)))
     logging.debug(after)
+
+    logging.debug("global")
+    logging.debug(pformat(global_elements))
 
     return render_template(
         "index.html",
@@ -236,3 +256,31 @@ def get_gcal_events():
         print('An error occurred: %s' % error)
 
     return 3
+    
+def add_element(section_index,list,element_title,element_datetime):
+    if section_index in list:
+        section = list[section_index]
+        section_header = section['header']
+        section_elements = section['elements']
+    else:
+        section = {}
+        
+        match section_index:
+            case -1:
+                section_header = "Overdue"
+            case 0:
+                section_header = "Today"
+            case 1:
+                section_header = "Tomorrow"
+            case _:
+                today = datetime.datetime.now()
+                next = today + datetime.timedelta(days = section_index)
+                section_header = next.strftime('%A')
+                
+
+        section_elements = []
+        section = {"header" : section_header}
+      
+    section_elements.append({"title":element_title,"datetime":element_datetime})
+    section['elements'] = section_elements
+    list[section_index] = section
