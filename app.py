@@ -85,14 +85,19 @@ def home():
         logging.debug('task datetine ' + str(task.due.datetime))
 
         if 'http' in task.content:
-            task_content = "[T] " + re.sub(r"http\S+", "", task.content)
+            task_content = re.sub(r"http\S+", "", task.content)
         else:
-            task_content = "[T] " + task.content
+            task_content = task.content
         try:
             if (task.due.datetime is not None):
                 parsed_date=datetime.datetime.strptime(task.due.datetime,"%Y-%m-%dT%H:%M:%SZ")
+                #TODO Dirty hack: todoist returns UTC, I need to convert it to my zonetime more elegantly.
+                hour = "0" + str(parsed_date.hour + 1) if parsed_date.hour + 1 < 10 else str(parsed_date.hour + 1)
+                minute = "0" + str(parsed_date.minute) if parsed_date.minute < 10 else str(parsed_date.minute)
+                task_clean_title = "[T] " + "[" + hour + ":" + minute + "] " + task_content
             else:
                 parsed_date=datetime.datetime.strptime(task.due.date,"%Y-%m-%d")
+                task_clean_title = "[T] " + task_content
         except Exception as e:
             logging.error("Parsing error,task " + task_content)
         
@@ -101,18 +106,18 @@ def home():
         days_between_dates = parsed_date.date() - today.date()
         
         if (days_between_dates.days < 0):
-            overdue.append(task_content)
+            overdue.append(task_clean_title)
         elif (days_between_dates.days == 0):
-            today_list.append(task_content)
+            today_list.append(task_clean_title)
         elif (days_between_dates.days == 1):
-            tomorrow.append(task_content)
+            tomorrow.append(task_clean_title)
         else:
             task_date_clean = str(parsed_date.date())
             if (task_date_clean in after):
                 tasks_in_date = after[task_date_clean]
             else:
                 tasks_in_date = []
-            tasks_in_date.append(task_content)
+            tasks_in_date.append(task_clean_title)
             after[task_date_clean] = tasks_in_date
 
 
