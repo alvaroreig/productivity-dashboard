@@ -60,15 +60,36 @@ def home():
     today = datetime.datetime.today()
 
     global_elements = {}
-    # Dic with dictionaries that contains title, elements
-    # -1 => overdue elements
-    # 0 => today elements
-    # 1 => tomorrow elements
-    # 2...n other days elements
+    # Dic with sections for each day 
+    # -1 => overdue section
+    # 0 => today section
+    # 1 => tomorrow section
+    # 2...n other days section
     #
-    # Each key contains an array with dictionaries with two elements: datetime and title
+    # Each section contains two elements: A header withe the label (Overdue, Today, Tomorrow, Monday..) and
+    # an array with elements, defined by two elements: datetime (for ordering purposes) and title
     # Example
-    #[{}]
+    # {-1: {'elements': [{'datetime': datetime.datetime(2023, 1, 23, 13, 0),
+    #                 'title': '[T] [13:00] Weekly review'},
+    #                {'datetime': datetime.datetime(2023, 1, 23, 0, 0),
+    #                 'title': '[T] Kefir'}],
+    #     'header': 'Retrasado'},
+    # 0: {'elements': [{'datetime': datetime.datetime(2023, 1, 24, 16, 20),
+    #                 'title': '[C] [16:20] Cita centro salud'},
+    #                 {'datetime': datetime.datetime(2023, 1, 24, 18, 0),
+    #                 'title': '[C] [18:00] Gym'}],
+    #     'header': 'Hoy'},
+    # 1: {'elements': [{'datetime': datetime.datetime(2023, 1, 25, 9, 0),
+    #                 'title': '[C] [09:00] Álvaro trabaja hasta tarde'},
+    #                 {'datetime': datetime.datetime(2023, 1, 25, 17, 45),
+    #                 'title': '[C] [17:45] Natación'}
+    #     'header': 'Mañana'},
+    # 2: {'elements': [{'datetime': datetime.datetime(2023, 1, 26, 0, 0),
+    #                 'title': '[T] Seguro coche'},
+    #                 {'datetime': datetime.datetime(2023, 1, 26, 18, 0),
+    #                 'title': '[C] [18:00] Psicomotricidad'}
+    #     'header': 'Jueves'}
+    # }
 
     ######################################################################################################
     #################            TODOIST EVENTS PROCESSING      ##########################################
@@ -166,6 +187,11 @@ def home():
         global_elements = global_elements
     )
 
+######################################################################################################
+#################            AUX FUNCTIONS       #####################################################
+######################################################################################################
+
+# Get tasks from Todoist 
 def get_todoist_events():
 
     api = TodoistAPI(os.getenv('TODOIST_API_KEY'))
@@ -185,6 +211,7 @@ def get_todoist_events():
     
     return tasks
 
+# Get events from Google Calendar
 def get_gcal_events(calendar):
     # If modifying these scopes, delete the file token.json.
     SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
@@ -243,31 +270,38 @@ def get_gcal_events(calendar):
     
 # Add an element {title,datetime} to its section, that will be created if necessary
 def add_element(section_index,list,element_title,element_datetime):
-    if section_index in list:
-        section = list[section_index]
-        section_header = section['header']
-        section_elements = section['elements']
-    else:
-        section = {}
-        
-        match section_index:
-            case -1:
-                section_header = "Overdue"
-            case 0:
-                section_header = "Today"
-            case 1:
-                section_header = "Tomorrow"
-            case _:
-                today = datetime.datetime.now()
-                next = today + datetime.timedelta(days = section_index)
-                if section_index < 7:
-                    section_header = next.strftime('%A')
-                else:
-                    section_header = element_datetime.strftime('%A,%d %B')
+    
+    # Only manage sections within the specied max days
+    if section_index <= int(os.getenv('MAX_DAYS',7)):
+    
+        # If section already existed, recover elements
+        if section_index in list:
+            section = list[section_index]
+            section_header = section['header']
+            section_elements = section['elements']
+        # Else, create section with the relevant header and the empty elements list
+        else:
+            section = {}
+            
+            match section_index:
+                case -1:
+                    section_header = os.getenv('OVERDUE_LABEL',"Overdue")
+                case 0:
+                    section_header = os.getenv('TODAY_LABEL',"Today")
+                case 1:
+                    section_header = os.getenv('TOMORROW_LABEL',"Tomorrow")
+                case _:
+                    today = datetime.datetime.now()
+                    next = today + datetime.timedelta(days = section_index)
+                    if section_index < 7:
+                        section_header = next.strftime('%A').capitalize()
+                    else:
+                        section_header = element_datetime.strftime('%A,%d %B').capitalize()
 
-        section_elements = []
-        section = {"header" : section_header}
-      
-    section_elements.append({"title":element_title,"datetime":element_datetime})
-    section['elements'] = section_elements
-    list[section_index] = section
+            section_elements = []
+            section = {"header" : section_header}
+        
+        # Finally, add the item to the elements list, and update the section with them
+        section_elements.append({"title":element_title,"datetime":element_datetime})
+        section['elements'] = section_elements
+        list[section_index] = section
