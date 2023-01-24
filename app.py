@@ -28,7 +28,7 @@ load_dotenv()
 
 app = Flask(__name__)
 
-if os.getenv('GUNICORN') == 'True':
+if os.getenv('APP_GUNICORN') == 'True':
     gunicorn_error_logger = logging.getLogger('gunicorn.error')
     app.logger.handlers.extend(gunicorn_error_logger.handlers)
     app.logger.setLevel(logging.DEBUG)
@@ -55,7 +55,7 @@ else:
 @app.route("/")
 def home():
 
-    if os.getenv('LOCALE') is not None:
+    if os.getenv('APP_LOCALE') is not None:
         locale.setlocale(locale.LC_TIME, os.getenv('LOCALE'))
     today = datetime.datetime.today()
 
@@ -95,71 +95,73 @@ def home():
     #################            TODOIST EVENTS PROCESSING      ##########################################
     ######################################################################################################
 
-    tasks = get_todoist_events()
-    logging.info('Recovered ' + str(len(tasks)) + ' task(s)')
-    #logging.debug(tasks)
+    if os.getenv('TODOIST_ENABLED','True') == "True":
+        tasks = get_todoist_events()
+        logging.info('Recovered ' + str(len(tasks)) + ' task(s)')
+        #logging.debug(tasks)
 
-    for task in tasks:
-        logging.debug('task content: ' + task.content)
-        logging.debug('task datetine ' + str(task.due.datetime))
+        for task in tasks:
+            logging.debug('task content: ' + task.content)
+            logging.debug('task datetine ' + str(task.due.datetime))
 
-        if 'http' in task.content:
-            task_content = re.sub(r"http\S+", "", task.content)
-        else:
-            task_content = task.content
-        try:
-            if (task.due.datetime is not None):
-                parsed_date=datetime.datetime.strptime(task.due.datetime,"%Y-%m-%dT%H:%M:%SZ")
-                #TODO Dirty hack: todoist returns UTC, I need to convert it to my zonetime more elegantly.
-                parsed_date = parsed_date.replace(hour=parsed_date.hour + 1)
-                hour = "0" + str(parsed_date.hour) if parsed_date.hour < 10 else str(parsed_date.hour )
-                minute = "0" + str(parsed_date.minute) if parsed_date.minute < 10 else str(parsed_date.minute)
-                task_clean_title = "[T] " + "[" + hour + ":" + minute + "] " + task_content
+            if os.getenv('TODOIST_REMOVE_LINKS','True') == "True" and 'http' in task.content:
+                task_content = re.sub(r"http\S+", "", task.content)
             else:
-                parsed_date=datetime.datetime.strptime(task.due.date,"%Y-%m-%d")
+                task_content = task.content
+            try:
+                if (task.due.datetime is not None):
+                    parsed_date=datetime.datetime.strptime(task.due.datetime,"%Y-%m-%dT%H:%M:%SZ")
+                    #TODO Dirty hack: todoist returns UTC, I need to convert it to my zonetime more elegantly.
+                    parsed_date = parsed_date.replace(hour=parsed_date.hour + 1)
+                    hour = "0" + str(parsed_date.hour) if parsed_date.hour < 10 else str(parsed_date.hour )
+                    minute = "0" + str(parsed_date.minute) if parsed_date.minute < 10 else str(parsed_date.minute)
+                    task_clean_title = "[T] " + "[" + hour + ":" + minute + "] " + task_content
+                else:
+                    parsed_date=datetime.datetime.strptime(task.due.date,"%Y-%m-%d")
+                    task_clean_title = "[T] " + task_content
+            except Exception as e:
+                logging.error("Parsing error,task " + task_content)
                 task_clean_title = "[T] " + task_content
-        except Exception as e:
-            logging.error("Parsing error,task " + task_content)
-            task_clean_title = "[T] " + task_content
-        
-        logging.debug('task parsed due datetime: ' + str(parsed_date))
+            
+            logging.debug('task parsed due datetime: ' + str(parsed_date))
 
-        days_between_dates = parsed_date.date() - today.date()
-        add_element(days_between_dates.days,global_elements,task_clean_title,parsed_date)
+            days_between_dates = parsed_date.date() - today.date()
+            add_element(days_between_dates.days,global_elements,task_clean_title,parsed_date)
 
 
     ######################################################################################################
     #################            GOOGLE CALENDAR EVENTS PROCESSING      ##################################
     ######################################################################################################
 
-    gcal_calendar_ids = os.getenv('GCAL_CALENDAR_IDS').split(',')
-    logging.debug(pformat(gcal_calendar_ids))
+    if os.getenv('GCAL_ENABLED','True') == "True":
+        gcal_calendar_ids = os.getenv('GCAL_CALENDAR_IDS').split(',')
+        logging.debug(pformat(gcal_calendar_ids))
 
-    for calendar in gcal_calendar_ids:
-        gcal_events = get_gcal_events(calendar);
-        for event in gcal_events:
-            logging.debug(event['summary'])
-            event_datetime= event['start'].get('dateTime')
-            logging.debug(event_datetime)
-            # TODO. This is a dirty hack. I need to remove the datezone offset in a more elegant manner.
-            truncated_due = event_datetime[0:19]
-            logging.debug(truncated_due)
-            truncared_parsed_date=datetime.datetime.strptime(truncated_due,"%Y-%m-%dT%H:%M:%S")
-            logging.debug(truncared_parsed_date)
-            
-            
-            days_between_dates = truncared_parsed_date.date() - today.date()
-            logging.debug(days_between_dates.days)
+        for calendar in gcal_calendar_ids:
+            gcal_events = get_gcal_events(calendar);
+            for event in gcal_events:
+                logging.debug(event['summary'])
+                event_datetime= event['start'].get('dateTime')
+                logging.debug(event_datetime)
+                # TODO. This is a dirty hack. I need to remove the datezone offset in a more elegant manner.
+                truncated_due = event_datetime[0:19]
+                logging.debug(truncated_due)
+                truncared_parsed_date=datetime.datetime.strptime(truncated_due,"%Y-%m-%dT%H:%M:%S")
+                logging.debug(truncared_parsed_date)
+                
+                
+                days_between_dates = truncared_parsed_date.date() - today.date()
+                logging.debug(days_between_dates.days)
 
 
-            if (truncared_parsed_date.hour != 0):
-                hour = "0" + str(truncared_parsed_date.hour) if truncared_parsed_date.hour < 10 else str(truncared_parsed_date.hour)
-                minute = "0" + str(truncared_parsed_date.minute) if truncared_parsed_date.minute < 10 else str(truncared_parsed_date.minute)
-                event_clean_title = "[C] " + "[" + hour + ":" + minute + "] " + event['summary']
-            else:
-                event_clean_title = "[C] " + event['summary']
+                if (truncared_parsed_date.hour != 0):
+                    hour = "0" + str(truncared_parsed_date.hour) if truncared_parsed_date.hour < 10 else str(truncared_parsed_date.hour)
+                    minute = "0" + str(truncared_parsed_date.minute) if truncared_parsed_date.minute < 10 else str(truncared_parsed_date.minute)
+                    event_clean_title = "[C] " + "[" + hour + ":" + minute + "] " + event['summary']
+                else:
+                    event_clean_title = "[C] " + event['summary']
 
-            add_element(days_between_dates.days,global_elements,event_clean_title,truncared_parsed_date)
+                add_element(days_between_dates.days,global_elements,event_clean_title,truncared_parsed_date)
 
     ######################################################################################################
     #################            ORDERING ELEMENTS      ##################################################
@@ -285,11 +287,11 @@ def add_element(section_index,list,element_title,element_datetime):
             
             match section_index:
                 case -1:
-                    section_header = os.getenv('OVERDUE_LABEL',"Overdue")
+                    section_header = os.getenv('APP_OVERDUE_LABEL',"Overdue")
                 case 0:
-                    section_header = os.getenv('TODAY_LABEL',"Today")
+                    section_header = os.getenv('APP_TODAY_LABEL',"Today")
                 case 1:
-                    section_header = os.getenv('TOMORROW_LABEL',"Tomorrow")
+                    section_header = os.getenv('APP_TOMORROW_LABEL',"Tomorrow")
                 case _:
                     today = datetime.datetime.now()
                     next = today + datetime.timedelta(days = section_index)
