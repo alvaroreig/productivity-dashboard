@@ -14,7 +14,6 @@ The elements will show a [C] or a [T] prefix to indicate if the element is a tas
 
 * Enable the integration with TODOIST_ENABLED and TODOIST_API_KEY
 * Customize the filter (TODOIST_FILTER) used in the API call.
-* Add the hour to taks with hour (TODOIST_ADD_HOUR_TO_TASK)
 * Remove links to avoid clutter with TODOIST_REMOVE_LINKS
 
 ## Google Calendar settings
@@ -33,19 +32,14 @@ The elements (events and/or taks)  are grouped in for type of elements:
 - Elements due tomorrow
 - The rest
 
-You can customize (localize) the header mask (APP_DATE_HEADER_MASK) and the keywords applied to every category of elements:
+You can customize (localize) the keywords applied to every category of elements:
 
-* APP_LOCALE_OVERDUE
-* APP_LOCALE_TODAY
-* APP_LOCALE_TOMORROW
-* APP_LOCALE_OTHERS_MASK
-
-You can also set a flag (ADD_HOUR) to append the hour in [HH:MM] before the title in tasks with hour.
+* APP_OVERDUE_LABEL=Retrasado
+* APP_TODAY_LABEL=Hoy
+* APP_TOMORROW_LABEL=Mañana
 
 ### Other
 
-* The view will autorefresh every 3600 seconds. You can change that setting in REFRESH_RATE_IN_SECONDS.
-* Every element will be truncated if the string is longer than ELEMENT_MAX_LENGHT.
 * Clicking on the header will refresh the view.
 
 ## Tested Devices
@@ -54,7 +48,7 @@ I use this app with a jailbroken Kindle Touch + KUAL + Weblaunch.
 
 ## Troubleshooting / Tips
 
-* In my experience, when REFRESH_RATE_IN_SECONDS the WebLaunch browser crashes pretty often. I use REFRESH_RATE_IN_SECONDS=3600 and I have to manually relaunch the dashbord every couple of days or so.
+- In previous versions the page auto refreshed every X seconds. It no longers does so because it froze after some days and, anyway, I didn't want to leave the backend on 24x7. I refresh it manually clicking the header
 
 
 ## TODO

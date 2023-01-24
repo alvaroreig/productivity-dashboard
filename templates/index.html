@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <!-- <meta http-equiv="refresh" content=14400> -->
+
+        <title>Productivity Dashboard</title>
+
+        <!-- Fonts -->
+        <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+
+        <!-- Styles -->
+        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='site.css')}}" />
+
+    </head>
+    <body>
+        <!-- Fecha actual -->
+        <h1 style="border: 1px solid black;width:95%">
+            <div style='display: table;margin: 0 auto;'>
+                <a href="javascript:location.reload(true)">{{date}}</a>
+            </div>
+        </h1>
+
+        {% for key, value in global_elements %}
+        <div>
+            <h2>{{ value['header'] }}</h2>
+            {% for element in value['elements'] %}
+                <h3><div>{{ element['title'] }}</div></h3>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </body>
+</html>
