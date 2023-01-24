@@ -38,8 +38,6 @@ You can customize (localize) the keywords applied to every category of elements:
 * APP_TODAY_LABEL=Hoy
 * APP_TOMORROW_LABEL=Mañana
 
-
-
 ### Other
 
 * Clicking on the header will refresh the view.
