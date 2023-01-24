@@ -57,24 +57,7 @@ def home():
 
     if os.getenv('LOCALE') is not None:
         locale.setlocale(locale.LC_TIME, os.getenv('LOCALE'))
-    
-    api = TodoistAPI(os.getenv('TODOIST_API_KEY'))
-    filter = os.getenv('TODOIST_FILTER')
     today = datetime.datetime.today()
-    logging.debug("today: " + str(today))
-
-    try:
-        tasks = api.get_tasks(filter=filter)
-    except Exception as e:
-        try:
-            logging.error(e)
-            tasks = api.get_tasks(filter=filter)
-        except Exception as e:
-            logging.error(e)
-            tasks = []
-    
-    logging.info('Recovered ' + str(len(tasks)) + ' task(s)')
-    #logging.debug(tasks)
 
     global_elements = {}
     # Dic with dictionaries that contains title, elements
@@ -87,11 +70,13 @@ def home():
     # Example
     #[{}]
 
+    ######################################################################################################
+    #################            TODOIST EVENTS PROCESSING      ##########################################
+    ######################################################################################################
 
-    overdue = []
-    today_list = []
-    tomorrow = []
-    after = {}
+    tasks = get_todoist_events()
+    logging.info('Recovered ' + str(len(tasks)) + ' task(s)')
+    #logging.debug(tasks)
 
     for task in tasks:
         logging.debug('task content: ' + task.content)
@@ -121,23 +106,10 @@ def home():
         days_between_dates = parsed_date.date() - today.date()
         add_element(days_between_dates.days,global_elements,task_clean_title,parsed_date)
 
-        if (days_between_dates.days < 0):
-            overdue.append(task_clean_title)
-        elif (days_between_dates.days == 0):
-            today_list.append(task_clean_title)
-        elif (days_between_dates.days == 1):
-            tomorrow.append(task_clean_title)
-        else:
-            task_date_clean = str(parsed_date.date())
-            if (task_date_clean in after):
-                tasks_in_date = after[task_date_clean]
-            else:
-                tasks_in_date = []
-            tasks_in_date.append(task_clean_title)
-            after[task_date_clean] = tasks_in_date
 
-
-
+    ######################################################################################################
+    #################            GOOGLE CALENDAR EVENTS PROCESSING      ##################################
+    ######################################################################################################
 
     gcal_calendar_ids = os.getenv('GCAL_CALENDAR_IDS').split(',')
     logging.debug(pformat(gcal_calendar_ids))
@@ -165,37 +137,12 @@ def home():
                 event_clean_title = "[C] " + "[" + hour + ":" + minute + "] " + event['summary']
             else:
                 event_clean_title = "[C] " + event['summary']
-            
-            if (days_between_dates.days == 0):
-                today_list.append(event_clean_title)
-            elif (days_between_dates.days == 1):
-                tomorrow.append(event_clean_title)
-            else:
-                task_date_clean = str(truncared_parsed_date.date())
-                if (task_date_clean in after):
-                    elements_in_date = after[task_date_clean]
-                else:
-                    elements_in_date = []
-                elements_in_date.append(event_clean_title)
-                after[task_date_clean] = elements_in_date
 
             add_element(days_between_dates.days,global_elements,event_clean_title,truncared_parsed_date)
 
-
-
-    after = sorted(after.items())
-
-    logging.debug("overdue tasks: " + str(len(overdue)))
-    logging.debug(overdue)
-
-    logging.debug("today tasks: " + str(len(today_list)))
-    logging.debug(today_list)
-
-    logging.debug("tomorrow tasks: " + str(len(tomorrow)))
-    logging.debug(tomorrow)
-
-    logging.debug("after tasks: " + str(len(after)))
-    logging.debug(after)
+    ######################################################################################################
+    #################            ORDERING ELEMENTS      ##################################################
+    ######################################################################################################
 
     logging.debug("global")
     logging.debug(pformat(global_elements))
@@ -216,12 +163,27 @@ def home():
     return render_template(
         "index.html",
         date=today.strftime('%A,%d %B %Y'),
-        overdue=overdue,
-        today = today_list,
-        tomorrow = tomorrow,
-        after = after,
         global_elements = global_elements
     )
+
+def get_todoist_events():
+
+    api = TodoistAPI(os.getenv('TODOIST_API_KEY'))
+    filter = os.getenv('TODOIST_FILTER')
+    today = datetime.datetime.today()
+    logging.debug("today: " + str(today))
+
+    try:
+        tasks = api.get_tasks(filter=filter)
+    except Exception as e:
+        try:
+            logging.error(e)
+            tasks = api.get_tasks(filter=filter)
+        except Exception as e:
+            logging.error(e)
+            tasks = []
+    
+    return tasks
 
 def get_gcal_events(calendar):
     # If modifying these scopes, delete the file token.json.
@@ -279,6 +241,7 @@ def get_gcal_events(calendar):
 
     return 3
     
+# Add an element {title,datetime} to its section, that will be created if necessary
 def add_element(section_index,list,element_title,element_datetime):
     if section_index in list:
         section = list[section_index]
