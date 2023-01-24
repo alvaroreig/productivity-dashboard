@@ -1,6 +1,6 @@
 # productivity-dashboard
 
-Just a simple PHP/Laravel app that retrieves tasks (from Todoist) and events (from Google Calendar) and displays them in a simple view designed for a Kindle Touch.
+Just a simple Python/Flask app that retrieves tasks (from Todoist) and events (from Google Calendar) and displays them in a simple view designed for a Kindle Touch.
 
 Settings are configured in the .env file (check .env-sample).
 
