@@ -56,7 +56,7 @@ else:
 def home():
 
     if os.getenv('APP_LOCALE') is not None:
-        locale.setlocale(locale.LC_TIME, os.getenv('LOCALE'))
+        locale.setlocale(locale.LC_TIME, os.getenv('APP_LOCALE'))
     today = datetime.datetime.today()
 
     global_elements = {}
@@ -185,7 +185,7 @@ def home():
 
     return render_template(
         "index.html",
-        date=today.strftime('%A,%d %B %Y'),
+        date=today.strftime('%A,%d %B %Y').capitalize(),
         global_elements = global_elements
     )
 
