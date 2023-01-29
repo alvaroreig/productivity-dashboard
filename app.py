@@ -272,6 +272,10 @@ def get_gcal_events(calendar):
     
 # Add an element {title,datetime} to its section, that will be created if necessary
 def add_element(section_index,list,element_title,element_datetime):
+
+    # Every overdue element inside the same section
+    if section_index < -1:
+        section_index = -1
     
     # Only manage sections within the specied max days
     if section_index <= int(os.getenv('MAX_DAYS',7)):
