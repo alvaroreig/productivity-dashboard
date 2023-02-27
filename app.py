@@ -18,9 +18,8 @@ from operator import itemgetter
 import datetime
 import os.path
 
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
+from google.oauth2 import service_account
+from googleapiclient.errors import HttpError
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
@@ -138,9 +137,14 @@ def home():
         logging.debug(pformat(gcal_calendar_ids))
 
         for calendar in gcal_calendar_ids:
-            gcal_events = get_gcal_events(calendar);
+            gcal_events = get_gcal_events(calendar)
             for event in gcal_events:
-                logging.debug(event['summary'])
+                # TODO auto generated events from restaurant reservations are not available for some reason
+                if ('summary' in event.keys()):
+                    summary = event['summary']
+                else:
+                    summary = 'Private event'
+                logging.debug(summary)
                 event_datetime= event['start'].get('dateTime')
                 logging.debug(event_datetime)
                 # TODO. This is a dirty hack. I need to remove the datezone offset in a more elegant manner.
@@ -157,9 +161,9 @@ def home():
                 if (truncared_parsed_date.hour != 0):
                     hour = "0" + str(truncared_parsed_date.hour) if truncared_parsed_date.hour < 10 else str(truncared_parsed_date.hour)
                     minute = "0" + str(truncared_parsed_date.minute) if truncared_parsed_date.minute < 10 else str(truncared_parsed_date.minute)
-                    event_clean_title = "[C] " + "[" + hour + ":" + minute + "] " + event['summary']
+                    event_clean_title = "[C] " + "[" + hour + ":" + minute + "] " + summary
                 else:
-                    event_clean_title = "[C] " + event['summary']
+                    event_clean_title = "[C] " + summary
 
                 add_element(days_between_dates.days,global_elements,event_clean_title,truncared_parsed_date)
 
@@ -221,33 +225,10 @@ def get_gcal_events(calendar):
     # Tutorial seguido
     # https://developers.google.com/calendar/api/quickstart/python?hl=en
 
-    """Shows basic usage of the Google Calendar API.
-    Prints the start and name of the next 10 events on the user's calendar.
-    """
-    creds = None
-    # The file token.json stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
-    if os.path.exists('token.json'):
-        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            # creds.refresh(Request())
-            try:
-                creds.refresh(Request())
-            except:
-                logging.error("Gcal outdated token, couldn't be refreshed")
-                flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES)
-                creds = flow.run_local_server(port=0)
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES)
-            creds = flow.run_local_server(port=0)
-        # Save the credentials for the next run
-        with open('token.json', 'w') as token:
-            token.write(creds.to_json())
+    creds = service_account.Credentials.from_service_account_file(
+        'credentials.json',
+        scopes=['https://www.googleapis.com/auth/calendar']
+    )
 
     try:
         service = build('calendar', 'v3', credentials=creds)
