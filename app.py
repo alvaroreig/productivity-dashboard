@@ -25,10 +25,21 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 load_dotenv()
+APP_GUNICORN = os.getenv('APP_GUNICORN')
+APP_LOCALE = os.getenv('APP_LOCALE')
+
+TODOIST_ENABLED = os.getenv('TODOIST_ENABLED','True')
+TODOIST_REMOVE_LINKS = os.getenv('TODOIST_REMOVE_LINKS','True')
+TODOIST_API_KEY = TodoistAPI(os.getenv('TODOIST_API_KEY'))
+TODOIST_FILTER = os.getenv('TODOIST_FILTER')
+
+
+GCAL_ENABLED = os.getenv('GCAL_ENABLED','False')
+GCAL_CALENDAR_IDS = os.getenv('GCAL_CALENDAR_IDS','')
 
 app = Flask(__name__)
 
-if os.getenv('APP_GUNICORN') == 'True':
+if APP_GUNICORN == 'True':
     gunicorn_error_logger = logging.getLogger('gunicorn.error')
     app.logger.handlers.extend(gunicorn_error_logger.handlers)
     app.logger.setLevel(logging.DEBUG)
@@ -55,7 +66,7 @@ else:
 @app.route("/")
 def home():
 
-    if os.getenv('APP_LOCALE') is not None:
+    if APP_LOCALE is not None:
         locale.setlocale(locale.LC_TIME, os.getenv('APP_LOCALE'))
     today = datetime.datetime.today()
 
@@ -95,7 +106,7 @@ def home():
     #################            TODOIST EVENTS PROCESSING      ##########################################
     ######################################################################################################
 
-    if os.getenv('TODOIST_ENABLED','True') == "True":
+    if TODOIST_ENABLED == "True":
         tasks = get_todoist_events()
         logging.info('Recovered ' + str(len(tasks)) + ' task(s)')
         #logging.debug(tasks)
@@ -104,7 +115,7 @@ def home():
             logging.debug('task content: ' + task.content)
             logging.debug('task datetine ' + str(task.due.datetime))
 
-            if os.getenv('TODOIST_REMOVE_LINKS','True') == "True" and 'http' in task.content:
+            if TODOIST_REMOVE_LINKS == "True" and 'http' in task.content:
                 task_content = re.sub(r"http\S+", "", task.content)
             else:
                 task_content = task.content
@@ -134,8 +145,8 @@ def home():
     #################            GOOGLE CALENDAR EVENTS PROCESSING      ##################################
     ######################################################################################################
 
-    if os.getenv('GCAL_ENABLED','True') == "True":
-        gcal_calendar_ids = os.getenv('GCAL_CALENDAR_IDS').split(',')
+    if GCAL_ENABLED == "True":
+        gcal_calendar_ids = GCAL_CALENDAR_IDS.split(',')
         logging.debug(pformat(gcal_calendar_ids))
 
         for calendar in gcal_calendar_ids:
@@ -202,8 +213,8 @@ def home():
 # Get tasks from Todoist 
 def get_todoist_events():
 
-    api = TodoistAPI(os.getenv('TODOIST_API_KEY'))
-    filter = os.getenv('TODOIST_FILTER')
+    api = TODOIST_API_KEY
+    filter = TODOIST_FILTER
     today = datetime.datetime.today()
     logging.debug("today: " + str(today))
 
