@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import re
 import datetime
+from dateutil import parser
 
 from flask import Flask
 from flask import render_template
@@ -109,7 +110,8 @@ def home():
                 task_content = task.content
             try:
                 if (task.due.datetime is not None):
-                    parsed_date=datetime.datetime.strptime(task.due.datetime,"%Y-%m-%dT%H:%M:%SZ")
+                    #parsed_date=datetime.datetime.strptime(task.due.datetime,"%Y-%m-%dT%H:%M:%SZ")
+                    parsed_date = parser.parse(task.due.datetime)
                     #TODO Dirty hack: todoist returns UTC, I need to convert it to my zonetime more elegantly.
                     parsed_date = parsed_date.replace(hour=parsed_date.hour + 1)
                     hour = "0" + str(parsed_date.hour) if parsed_date.hour < 10 else str(parsed_date.hour )
