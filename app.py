@@ -257,8 +257,8 @@ def get_gcal_events(calendar):
 
     except HttpError as error:
         print('An error occurred: %s' % error)
+        return []  # Devuelve una lista vacía en caso de error
 
-    return 3
     
 # Add an element {title,datetime} to its section, that will be created if necessary
 def add_element(section_index,list,element_title,element_datetime):
