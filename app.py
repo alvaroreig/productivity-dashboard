@@ -213,7 +213,7 @@ def home():
 # Get tasks from Todoist 
 def get_todoist_events():
 
-    api = TODOIST_API_KEY
+    api = TodoistAPI(TODOIST_API_KEY)
     filter = TODOIST_FILTER
     today = datetime.datetime.today()
     logging.debug("today: " + str(today))
