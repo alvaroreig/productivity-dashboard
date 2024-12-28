@@ -13,10 +13,12 @@ npm-debug.log
 yarn-error.log
 /.idea
 /.vscode
+credentials.json
 
 #Python
 
 .venv/
+venv/
 __pycache__/
 .env
 

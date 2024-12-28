@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import re
 import datetime
+from dateutil import parser
 
 from flask import Flask
 from flask import render_template
@@ -24,10 +25,21 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 load_dotenv()
+APP_GUNICORN = os.getenv('APP_GUNICORN')
+APP_LOCALE = os.getenv('APP_LOCALE')
+
+TODOIST_ENABLED = os.getenv('TODOIST_ENABLED','True')
+TODOIST_REMOVE_LINKS = os.getenv('TODOIST_REMOVE_LINKS','True')
+TODOIST_API_KEY = os.getenv('TODOIST_API_KEY')
+TODOIST_FILTER = os.getenv('TODOIST_FILTER')
+
+
+GCAL_ENABLED = os.getenv('GCAL_ENABLED','False')
+GCAL_CALENDAR_IDS = os.getenv('GCAL_CALENDAR_IDS','')
 
 app = Flask(__name__)
 
-if os.getenv('APP_GUNICORN') == 'True':
+if APP_GUNICORN == 'True':
     gunicorn_error_logger = logging.getLogger('gunicorn.error')
     app.logger.handlers.extend(gunicorn_error_logger.handlers)
     app.logger.setLevel(logging.DEBUG)
@@ -54,7 +66,7 @@ else:
 @app.route("/")
 def home():
 
-    if os.getenv('APP_LOCALE') is not None:
+    if APP_LOCALE is not None:
         locale.setlocale(locale.LC_TIME, os.getenv('APP_LOCALE'))
     today = datetime.datetime.today()
 
@@ -94,7 +106,7 @@ def home():
     #################            TODOIST EVENTS PROCESSING      ##########################################
     ######################################################################################################
 
-    if os.getenv('TODOIST_ENABLED','True') == "True":
+    if TODOIST_ENABLED == "True":
         tasks = get_todoist_events()
         logging.info('Recovered ' + str(len(tasks)) + ' task(s)')
         #logging.debug(tasks)
@@ -103,13 +115,14 @@ def home():
             logging.debug('task content: ' + task.content)
             logging.debug('task datetine ' + str(task.due.datetime))
 
-            if os.getenv('TODOIST_REMOVE_LINKS','True') == "True" and 'http' in task.content:
+            if TODOIST_REMOVE_LINKS == "True" and 'http' in task.content:
                 task_content = re.sub(r"http\S+", "", task.content)
             else:
                 task_content = task.content
             try:
                 if (task.due.datetime is not None):
-                    parsed_date=datetime.datetime.strptime(task.due.datetime,"%Y-%m-%dT%H:%M:%SZ")
+                    #parsed_date=datetime.datetime.strptime(task.due.datetime,"%Y-%m-%dT%H:%M:%SZ")
+                    parsed_date = parser.parse(task.due.datetime)
                     #TODO Dirty hack: todoist returns UTC, I need to convert it to my zonetime more elegantly.
                     parsed_date = parsed_date.replace(hour=parsed_date.hour + 1)
                     hour = "0" + str(parsed_date.hour) if parsed_date.hour < 10 else str(parsed_date.hour )
@@ -132,13 +145,14 @@ def home():
     #################            GOOGLE CALENDAR EVENTS PROCESSING      ##################################
     ######################################################################################################
 
-    if os.getenv('GCAL_ENABLED','True') == "True":
-        gcal_calendar_ids = os.getenv('GCAL_CALENDAR_IDS').split(',')
+    if GCAL_ENABLED == "True":
+        gcal_calendar_ids = GCAL_CALENDAR_IDS.split(',')
         logging.debug(pformat(gcal_calendar_ids))
 
         for calendar in gcal_calendar_ids:
             gcal_events = get_gcal_events(calendar)
             for event in gcal_events:
+
                 # TODO auto generated events from restaurant reservations are not available for some reason
                 if ('summary' in event.keys()):
                     summary = event['summary']
@@ -146,7 +160,14 @@ def home():
                     summary = 'Private event'
                 logging.debug(summary)
                 event_datetime= event['start'].get('dateTime')
+
+                # All day events don't have datetime, so we generate one from the avalaible date
+                if event_datetime is None:
+                    event_date = event['start'].get('date')
+                    event_datetime = datetime.datetime.strptime(event_date, "%Y-%m-%d").strftime("%Y-%m-%dT%H:%M:%S")
+
                 logging.debug(event_datetime)
+                
                 # TODO. This is a dirty hack. I need to remove the datezone offset in a more elegant manner.
                 truncated_due = event_datetime[0:19]
                 logging.debug(truncated_due)
@@ -200,8 +221,8 @@ def home():
 # Get tasks from Todoist 
 def get_todoist_events():
 
-    api = TodoistAPI(os.getenv('TODOIST_API_KEY'))
-    filter = os.getenv('TODOIST_FILTER')
+    api = TodoistAPI(TODOIST_API_KEY)
+    filter = TODOIST_FILTER
     today = datetime.datetime.today()
     logging.debug("today: " + str(today))
 
@@ -255,8 +276,8 @@ def get_gcal_events(calendar):
 
     except HttpError as error:
         print('An error occurred: %s' % error)
+        return []  # Devuelve una lista vacía en caso de error
 
-    return 3
     
 # Add an element {title,datetime} to its section, that will be created if necessary
 def add_element(section_index,list,element_title,element_datetime):
