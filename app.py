@@ -152,6 +152,7 @@ def home():
         for calendar in gcal_calendar_ids:
             gcal_events = get_gcal_events(calendar)
             for event in gcal_events:
+
                 # TODO auto generated events from restaurant reservations are not available for some reason
                 if ('summary' in event.keys()):
                     summary = event['summary']
@@ -159,7 +160,14 @@ def home():
                     summary = 'Private event'
                 logging.debug(summary)
                 event_datetime= event['start'].get('dateTime')
+
+                # All day events don't have datetime, so we generate one from the avalaible date
+                if event_datetime is None:
+                    event_date = event['start'].get('date')
+                    event_datetime = datetime.datetime.strptime(event_date, "%Y-%m-%d").strftime("%Y-%m-%dT%H:%M:%S")
+
                 logging.debug(event_datetime)
+                
                 # TODO. This is a dirty hack. I need to remove the datezone offset in a more elegant manner.
                 truncated_due = event_datetime[0:19]
                 logging.debug(truncated_due)
