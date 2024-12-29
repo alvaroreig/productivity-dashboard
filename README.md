@@ -2,7 +2,7 @@
 
 Just a simple Python/Flask app that retrieves tasks (from Todoist) and events (from Google Calendar) and displays them in a simple view designed for a Kindle Touch.
 
-Settings are configured in the .env file (check .env-sample).
+Settings are configured in the .env file (check .env-sample) and in credentials.json (for Google Calendar integration).
 
 ![](resources/img/kindle.jpg)
 
@@ -18,10 +18,17 @@ The elements will show a [C] or a [T] prefix to indicate if the element is a tas
 
 ## Google Calendar settings
 
-* Enable the integration with GCAL_ENABLED and specify your calendars in GCAL_CALENDARS_IDS, GCAL_DEFAULT_CALENDAR_ID
+* Enable the integration with GCAL_ENABLED and specify your calendars IDs in GCAL_CALENDARS_IDS, GCAL_DEFAULT_CALENDAR_ID
 * The integration works with GOOGLE_CALENDAR_AUTH_PROFILE=service_account
 * Follow the instrucctions in https://github.com/spatie/laravel-google-calendar#how-to-obtain-the-credentials-to-communicate-with-google-calendar
-* Store your JSON credentials file in storage/app/google-calendar/service-account-credentials.json
+* Store your JSON credentials file in credentials.json
+
+## Configuration guide
+
+* Set up .env from .env.example
+* Set up a service account credential in Google Api Console with permissions to read Google Calendar. Download your credentials.json
+* Execute configure.sh to set up a venv and install dependencies
+* Start the app with start.sh
 
 ## Group by date
 
@@ -44,7 +51,9 @@ You can customize (localize) the keywords applied to every category of elements:
 
 ## Tested Devices
 
-I use this app with a jailbroken Kindle Touch + KUAL + Weblaunch.
+I use this app in this setting:
+- Backend: Raspberry pi 4
+- Client: Jailbroken Kindle Touch + KUAL + Weblaunch.
 
 ## Troubleshooting / Tips
 
