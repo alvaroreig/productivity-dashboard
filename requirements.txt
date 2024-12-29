@@ -34,6 +34,6 @@ six==1.16.0
 soupsieve==2.3.2.post1
 todoist-api-python==2.0.2
 uritemplate==4.1.1
-urllib3==1.26.14
+urllib3==1.26.19
 Werkzeug==3.0.6
 zope.interface==5.5.2
