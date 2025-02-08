@@ -2,7 +2,9 @@ from __future__ import print_function
 
 import re
 import datetime
+from datetime import timezone
 from dateutil import parser
+from zoneinfo import ZoneInfo
 
 from flask import Flask
 from flask import render_template
@@ -15,8 +17,6 @@ from pprint import pformat
 from todoist_api_python.api import TodoistAPI
 from operator import itemgetter
 
-
-import datetime
 import os.path
 
 from google.oauth2 import service_account
@@ -201,6 +201,13 @@ def home():
         logging.debug(pformat(section))
         elements = section['elements'];
         logging.debug(pformat(elements))
+    
+        # A veces fallaba la ordenación de elementos porque algunos elementpos tenian tzinfo y otros no
+        madrid_tz = ZoneInfo("Europe/Madrid")
+        for item in elements:
+            if item['datetime'].tzinfo is None:
+                item['datetime'] = item['datetime'].replace(tzinfo=madrid_tz)  # Asume que las naive son UTC
+        
         elements = sorted(elements, key=itemgetter('datetime')) 
         logging.debug(elements)
         section['elements'] = elements
